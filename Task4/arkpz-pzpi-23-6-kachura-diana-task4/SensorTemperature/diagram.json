@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "author": "Діана Качура",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    {
+      "type": "wokwi-ntc-temperature-sensor",
+      "id": "ntc1",
+      "top": 12.2,
+      "left": -173.4,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:GND.1", "ntc1:GND", "black", [ "h0" ] ],
+    [ "ntc1:VCC", "esp:3V3", "red", [ "h0" ] ],
+    [ "esp:35", "ntc1:OUT", "green", [ "h0" ] ]
+  ],
+  "dependencies": {}
+}
