@@ -1,0 +1,745 @@
+{
+  "common": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "features": "Features",
+    "testimonials": "Testimonials",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "language": "Language",
+    "learnMore": "Learn More",
+    "getStartedFree": "Get Started Free",
+    "contactUs": "Contact us",
+    "subscribe": "Subscribe",
+    "requestDemo": "Request a Demo",
+    "viewAllFeatures": "View all features",
+    "success": "Success",
+    "error": "Error",
+    "invalidDate": "Invalid date"
+  },
+  "navbar": {
+    "ecoMonitor": "EcoMonitor",
+    "links": {
+      "stations": "Stations",
+      "allStations": "All Stations",
+      "allSensors": "All Sensors",
+      "readings": "Readings",
+      "viewReadings": "View Readings",
+      "dashboard": "Dashboard",
+      "admin": "Admin",
+      "users": "Users",
+      "backups": "Backups",
+      "notificationTemplates": "Notification templates",
+      "operations": "Operations",
+      "maintenance": "Maintenance",
+      "alerts": "Alerts",
+      "exports": "Exports"
+    },
+    "userMenu": {
+      "myAccount": "My account",
+      "settings": "Settings",
+      "manageUsers": "Manage Users",
+      "adminPanel": "Admin Panel",
+      "operations": "Operations",
+      "logout": "Logout",
+      "user": "User"
+    }
+  },
+  "hero": {
+    "badge": "Real-time Environmental Monitoring",
+    "title": "Protect our planet",
+    "description": "Advanced environmental monitoring system providing real-time data analytics, pollution tracking, and actionable insights to help protect our environment for future generations.",
+    "secureReliable": "Secure & Reliable",
+    "realTimeAnalytics": "Real-time Analytics",
+    "ecoFriendly": "Eco-Friendly"
+  },
+  "features": {
+    "title": "Comprehensive Environmental Monitoring",
+    "list": {
+      "realTimeMonitoring": "Real-time monitoring",
+      "dataAnalytics": "Data analytics",
+      "alertSystem": "Alert system",
+      "historicalReports": "Historical reports",
+      "multiSensorSupport": "Multi-sensor support",
+      "mobileApp": "Mobile app",
+      "apiIntegration": "API integration",
+      "customDashboards": "Custom dashboards",
+      "environmentalForecasting": "Environmental forecasting"
+    },
+    "items": {
+      "airQuality": {
+        "title": "Real-time Air Quality Monitoring",
+        "description": "Track air quality metrics including PM2.5, PM10, CO2, and other pollutants in real-time with advanced sensor networks and data visualization."
+      },
+      "waterQuality": {
+        "title": "Water Quality Analysis",
+        "description": "Comprehensive water quality monitoring with pH, temperature, dissolved oxygen, and contaminant detection for rivers, lakes, and oceans."
+      },
+      "aiInsights": {
+        "title": "AI-Powered Environmental Insights",
+        "description": "Machine learning algorithms analyze environmental data to predict trends, identify anomalies, and provide actionable recommendations for environmental protection."
+      }
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "stillHaveQuestions": "Still have questions?",
+    "items": {
+      "whatIs": {
+        "question": "What is EcoMonitor?",
+        "answer": "EcoMonitor is a software system for real-time environmental monitoring. It collects, processes, and visualizes data from sensors to help track air quality, gas concentration, temperature, and other ecological indicators."
+      },
+      "parameters": {
+        "question": "What environmental parameters can be monitored?",
+        "answer": "EcoMonitor supports monitoring of air quality indicators such as gas concentration, temperature, humidity, and other sensor-based environmental data depending on the connected devices."
+      },
+      "realTime": {
+        "question": "Is the data updated in real time?",
+        "answer": "Yes. Sensor data is transmitted to the server in real time or at configurable intervals, ensuring up-to-date information and timely detection of environmental changes."
+      },
+      "whoCanUse": {
+        "question": "Who can use EcoMonitor?",
+        "answer": "EcoMonitor is designed for individuals, businesses, and organizations that need reliable environmental monitoring, including smart buildings, industrial facilities, and research projects."
+      },
+      "security": {
+        "question": "How is data security ensured?",
+        "answer": "All data transmitted through EcoMonitor is securely processed and stored. The system uses encrypted connections and controlled access to protect sensitive environmental and user data."
+      }
+    }
+  },
+  "about": {
+    "title": "About EcoMonitor",
+    "description": "EcoMonitor is a cutting-edge environmental monitoring platform designed to help organizations, governments, and communities track and protect our planet's vital resources. Our advanced sensor networks and AI-powered analytics provide real-time insights into air quality, water conditions, and environmental health, enabling proactive measures to combat pollution and climate change."
+  },
+  "howItWorks": {
+    "title": "How It Works Step-by-Step Guide",
+    "description": "Our comprehensive environmental monitoring system is simple to deploy and use. Follow these four easy steps to start protecting your environment today.",
+    "steps": {
+      "deploy": {
+        "title": "Deploy Sensors",
+        "description": "Install our advanced environmental sensors at key monitoring locations. Our IoT devices are weather-resistant and energy-efficient."
+      },
+      "collect": {
+        "title": "Collect Data",
+        "description": "Sensors continuously collect real-time environmental data including air quality, water parameters, temperature, and more."
+      },
+      "analyze": {
+        "title": "Analyze & Process",
+        "description": "Our AI-powered platform processes the collected data, identifies patterns, and generates actionable insights and reports."
+      },
+      "action": {
+        "title": "Take Action",
+        "description": "Receive alerts and recommendations to take proactive measures, ensuring environmental protection and regulatory compliance."
+      }
+    }
+  },
+  "cta": {
+    "title": "All Your Ideas & Concepts In One Interface",
+    "description": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Eaque, beatae. Ipsa tempore ipsum iste quibusdam illum ducimus eos. Quasi, sed!"
+  },
+  "pricing": {
+    "title": "Get Unlimited Access",
+    "subtitle": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Alias reiciendis.",
+    "mostPopular": "Most popular",
+    "perMonth": "/month",
+    "plans": {
+      "free": {
+        "title": "Free",
+        "description": "Lorem ipsum dolor sit, amet ipsum consectetur adipisicing elit.",
+        "buttonText": "Get Started",
+        "benefits": [
+          "1 Team member",
+          "2 GB Storage",
+          "Upto 4 pages",
+          "Community support",
+          "lorem ipsum dolor"
+        ]
+      },
+      "premium": {
+        "title": "Premium",
+        "description": "Lorem ipsum dolor sit, amet ipsum consectetur adipisicing elit.",
+        "buttonText": "Start Free Trial",
+        "benefits": [
+          "4 Team member",
+          "4 GB Storage",
+          "Upto 6 pages",
+          "Priority support",
+          "lorem ipsum dolor"
+        ]
+      },
+      "enterprise": {
+        "title": "Enterprise",
+        "description": "Lorem ipsum dolor sit, amet ipsum consectetur adipisicing elit.",
+        "buttonText": "Contact US",
+        "benefits": [
+          "10 Team member",
+          "8 GB Storage",
+          "Upto 10 pages",
+          "Priority support",
+          "lorem ipsum dolor"
+        ]
+      }
+    }
+  },
+  "testimonials": {
+    "title": "Discover Why People Love This Landing Page",
+    "description": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Non unde error facere hic reiciendis illo"
+  },
+  "footer": {
+    "followUs": "Follow US",
+    "platforms": "Platforms",
+    "about": "About",
+    "community": "Community",
+    "links": {
+      "github": "Github",
+      "twitter": "Twitter",
+      "dribbble": "Dribbble",
+      "web": "Web",
+      "mobile": "Mobile",
+      "desktop": "Desktop",
+      "youtube": "Youtube",
+      "discord": "Discord",
+      "twitch": "Twitch"
+    }
+  },
+  "newsletter": {
+    "title": "Join Our Daily Newsletter",
+    "description": "Lorem ipsum dolor sit amet consectetur.",
+    "emailPlaceholder": "leomirandadev@gmail.com"
+  },
+  "services": {
+    "title": "Professional Services",
+    "description": "Comprehensive environmental monitoring solutions tailored to your needs, from small-scale deployments to enterprise-level sensor networks.",
+    "items": {
+      "analytics": {
+        "title": "Environmental Data Analytics",
+        "description": "Advanced analytics platform that processes millions of data points to identify patterns, trends, and anomalies in environmental conditions, helping you make informed decisions."
+      },
+      "management": {
+        "title": "Sensor Network Management",
+        "description": "Comprehensive management system for deploying, monitoring, and maintaining environmental sensor networks across multiple locations with real-time status updates."
+      },
+      "detection": {
+        "title": "Pollution Source Detection",
+        "description": "AI-powered detection system that identifies pollution sources, tracks contamination spread, and provides early warning alerts to prevent environmental disasters."
+      }
+    }
+  },
+  "statistics": {
+    "users": "Users",
+    "subscribers": "Subscribers",
+    "downloads": "Downloads",
+    "products": "Products"
+  },
+  "heroCards": {
+    "realTimeTracking": {
+      "title": "Real-time Data Tracking",
+      "description": "Monitor air quality, water pollution, and weather conditions with live updates. Our sensors deliver data every 60 seconds for immediate analysis.",
+      "footer": "Cloud-synced • Low latency • 99.9% uptime"
+    },
+    "analytics": {
+      "title": "Advanced Analytics",
+      "subtitle": "Visual Data Intelligence",
+      "description": "Transform raw environmental data into actionable insights with interactive charts, trend analysis, and predictive modeling tools.",
+      "badges": {
+        "aiPowered": "AI-Powered",
+        "multiSource": "Multi-source"
+      }
+    },
+    "studentPlan": {
+      "title": "Student Plan",
+      "badge": "Academic Discount",
+      "price": "Free",
+      "period": "/ for educational use",
+      "description": "Perfect for school projects, university research, and environmental clubs.",
+      "button": "Access Educational License",
+      "benefits": [
+        "Up to 5 sensor connections",
+        "Basic analytics dashboard",
+        "Historical data (30 days)",
+        "Educational resources",
+        "Community support"
+      ]
+    },
+    "alertSystem": {
+      "title": "Smart Alert System",
+      "description": "Receive instant notifications when environmental parameters exceed safe thresholds. Customizable alerts via email, SMS, or mobile app.",
+      "badges": {
+        "aqiAlerts": "AQI Alerts",
+        "pollutionPeaks": "Pollution Peaks",
+        "weatherWarnings": "Weather Warnings"
+      }
+    }
+  },
+  "forms": {
+    "login": {
+      "title": "Sign in to your account",
+      "description": "Enter your email and password to access your account",
+      "email": "Email",
+      "password": "Password",
+      "emailPlaceholder": "m@example.com",
+      "signingIn": "Signing in...",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "passwordDescription": "Password must be at least 8 characters long.",
+      "errors": {
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordMinLength": "Password must be at least 8 characters long",
+        "loginFailed": "Login failed. Please check your credentials and try again.",
+        "invalidCredentials": "Invalid email or password",
+        "tooManyAttempts": "Too many attempts. Please try again later"
+      }
+    },
+    "signup": {
+      "title": "Create your account",
+      "description": "Fill in the form below to create your account",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "emailPlaceholder": "m@example.com",
+      "creatingAccount": "Creating Account...",
+      "createAccount": "Create Account",
+      "haveAccount": "Already have an account?",
+      "emailDescription": "We'll use this to contact you. We will not share your email with anyone else.",
+      "passwordDescription": "Must be at least 8 characters long.",
+      "confirmPasswordDescription": "Please confirm your password.",
+      "errors": {
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordMinLength": "Password must be at least 8 characters long",
+        "confirmPasswordRequired": "Please confirm your password",
+        "passwordsNotMatch": "Passwords do not match",
+        "registrationFailed": "Registration failed. Please try again."
+      }
+    },
+    "account": {
+      "title": "Account Settings",
+      "description": "Manage your account information and preferences",
+      "email": "Email",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "phone": "Phone Number",
+      "emailPlaceholder": "your.email@example.com",
+      "firstNamePlaceholder": "John",
+      "lastNamePlaceholder": "Doe",
+      "phonePlaceholder": "+1 (555) 123-4567",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "loading": "Loading account information...",
+      "profileUpdated": "Profile updated successfully!",
+      "emailDescription": "Your email address is used for account identification and notifications.",
+      "phoneDescription": "Optional. Your phone number for account recovery and notifications.",
+      "errors": {
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "firstNameMinLength": "First name must be at least 2 characters long",
+        "firstNameMaxLength": "First name must be less than 50 characters",
+        "lastNameMinLength": "Last name must be at least 2 characters long",
+        "lastNameMaxLength": "Last name must be less than 50 characters",
+        "phoneInvalid": "Please enter a valid phone number",
+        "phoneMinDigits": "Phone number must contain at least 10 digits",
+        "loadFailed": "Failed to load account information. Please try again.",
+        "updateFailed": "Failed to update profile. Please try again.",
+        "sessionExpired": "Your session has expired. Please log in again.",
+        "userNotFound": "User account not found.",
+        "emailInUse": "This email is already in use. Please choose another one.",
+        "tooManyRequests": "Too many requests. Please try again later.",
+        "serverError": "Server error. Please try again later.",
+        "invalidData": "Invalid data provided. Please check your input.",
+        "noChanges": "No changes to save."
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your application preferences and notification settings",
+      "language": "Language",
+      "measurementUnit": "Measurement Unit",
+      "darkMode": "Dark Mode",
+      "enableNotifications": "Enable Notifications",
+      "emailNotifications": "Email Notifications",
+      "pushNotifications": "Push Notifications",
+      "smsNotifications": "SMS Notifications",
+      "selectLanguage": "Select language",
+      "selectUnit": "Select unit",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "saving": "Saving...",
+      "saveSettings": "Save Settings",
+      "loading": "Loading settings...",
+      "settingsUpdated": "Settings updated successfully!",
+      "languageDescription": "Choose your preferred language for the interface.",
+      "measurementUnitDescription": "Choose your preferred measurement system.",
+      "darkModeDescription": "Toggle dark mode for the application interface.",
+      "notificationsDescription": "Master switch for all notification types.",
+      "emailNotificationsDescription": "Receive notifications via email.",
+      "pushNotificationsDescription": "Receive push notifications in your browser.",
+      "smsNotificationsDescription": "Receive notifications via SMS (requires phone number).",
+      "errors": {
+        "loadFailed": "Failed to load settings. Please try again.",
+        "updateFailed": "Failed to update settings. Please try again.",
+        "sessionExpired": "Your session has expired. Please log in again.",
+        "settingsNotFound": "Settings not found.",
+        "tooManyRequests": "Too many requests. Please try again later.",
+        "serverError": "Server error. Please try again later.",
+        "invalidData": "Invalid data provided. Please check your input.",
+        "noChanges": "No changes to save."
+      }
+    }
+  },
+  "stations": {
+    "title": "Monitoring Stations",
+    "description": "Click on a station marker to view details, or click on the map to add a new station",
+    "descriptionViewOnly": "Click on a station marker to view details",
+    "loadingStations": "Loading stations...",
+    "loadingMap": "Loading map...",
+    "addStation": "Add Station",
+    "reloadPage": "Reload page",
+    "page": {
+      "loadFailed": "Failed to load monitoring stations. Please try again.",
+      "sessionExpired": "Your session has expired. Please log in again."
+    },
+    "map": {
+      "loading": "Loading map...",
+      "notAvailable": "Google Maps is not available",
+      "notAvailableDescription": "This might be due to a browser extension (ad blocker) blocking Google Maps requests.",
+      "fixInstructions": "To fix this:",
+      "fixStep1": "Disable ad blocker for this site",
+      "fixStep2": "Add maps.googleapis.com to whitelist",
+      "fixStep3": "Try in incognito/private mode",
+      "stationsList": "Stations list:"
+    },
+    "dialog": {
+      "title": "Station Information",
+      "description": "Monitoring station information",
+      "active": "Active",
+      "inactive": "Inactive",
+      "address": "Address",
+      "location": "Location",
+      "altitude": "Altitude",
+      "created": "Created",
+      "activeAlerts": "Active Alerts",
+      "allSystemsOperational": "All systems operational",
+      "allSystemsOperationalDescription": "No critical values have been reached. All sensors are functioning normally.",
+      "close": "Close",
+      "viewDetails": "View Details"
+    },
+    "createDialog": {
+      "title": "Register New Station",
+      "description": "Create a new monitoring station at the selected location",
+      "stationName": "Station Name",
+      "stationNameRequired": "Station name is required",
+      "description": "Description",
+      "descriptionPlaceholder": "Optional description of the monitoring station",
+      "latitude": "Latitude",
+      "latitudeRequired": "Latitude is required",
+      "longitude": "Longitude",
+      "longitudeRequired": "Longitude is required",
+      "altitude": "Altitude (meters)",
+      "altitudePlaceholder": "Optional",
+      "address": "Address",
+      "addressPlaceholder": "Optional physical address",
+      "autoFilled": "Automatically filled from map selection",
+      "cancel": "Cancel",
+      "create": "Create Station",
+      "creating": "Creating...",
+      "created": "Created!",
+      "createdSuccess": "Station created successfully!",
+      "createFailed": "Failed to create station. Please try again.",
+      "invalidData": "Invalid data provided. Please check your input.",
+      "sessionExpired": "Your session has expired. Please log in again.",
+      "stationExists": "A station with this name already exists."
+    },
+    "infoTab": {
+      "title": "Station Information",
+      "description": "View and edit station details",
+      "edit": "Edit",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "location": "Location",
+      "altitude": "Altitude",
+      "address": "Address",
+      "created": "Created",
+      "statusTitle": "Station Status",
+      "statusDescription": "Activate or deactivate the monitoring station",
+      "currentStatus": "Current Status",
+      "currentlyActive": "Station is currently active",
+      "currentlyInactive": "Station is currently inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "processing": "Processing...",
+      "updatedSuccess": "Station updated successfully!",
+      "updateFailed": "Failed to update station. Please try again.",
+      "toggleFailed": "Failed to toggle station status. Please try again."
+    },
+    "alertsTab": {
+      "title": "Alerts",
+      "description": "Monitor active alerts and view alert history for this station",
+      "refresh": "Refresh",
+      "sensorType": "Sensor Type",
+      "allTypes": "All Types",
+      "severity": "Severity",
+      "allSeverities": "All Severities",
+      "clearFilters": "Clear Filters",
+      "activeAlerts": "Active Alerts",
+      "history": "History",
+      "loading": "Loading...",
+      "noActiveAlerts": "No active alerts",
+      "noActiveAlertsDescription": "All systems are operating normally. No critical values have been reached.",
+      "noHistory": "No alert history",
+      "noHistoryDescription": "There are no resolved alerts in the history.",
+      "tableHeaders": {
+        "sensorType": "Sensor Type",
+        "severity": "Severity",
+        "message": "Message",
+        "created": "Created",
+        "resolved": "Resolved",
+        "acknowledged": "Acknowledged",
+        "actions": "Actions"
+      },
+      "threshold": "Threshold",
+      "actual": "Actual",
+      "acknowledge": "Acknowledge",
+      "loadActiveFailed": "Failed to load active alerts.",
+      "loadHistoryFailed": "Failed to load alert history.",
+      "acknowledgeSuccess": "Alert acknowledged successfully.",
+      "acknowledgeFailed": "Failed to acknowledge alert.",
+      "severities": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      }
+    },
+    "sensorsTab": {
+      "title": "Sensors",
+      "description": "Manage sensors for this station",
+      "addSensor": "Add Sensor",
+      "addNewSensor": "Add New Sensor",
+      "registerDescription": "Register a new sensor for this monitoring station",
+      "sensorType": "Sensor Type",
+      "sensorName": "Sensor Name",
+      "serialNumber": "Serial Number",
+      "serialNumberDescription": "Unique serial number for the sensor",
+      "description": "Description",
+      "location": "Location",
+      "locationDescription": "Physical location of the sensor",
+      "cancel": "Cancel",
+      "create": "Create Sensor",
+      "creating": "Creating...",
+      "noSensors": "No sensors registered for this station",
+      "serial": "Serial:",
+      "details": "Details",
+      "delete": "Delete",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "deleteConfirmTitle": "Are you sure?",
+      "deleteConfirmDescription": "This action cannot be undone. This will permanently delete the sensor \"{name}\" and all its readings.",
+      "deleteConfirmCancel": "Cancel",
+      "deleteConfirmDelete": "Delete",
+      "loadFailed": "Failed to load sensors. Please try again.",
+      "createFailed": "Failed to create sensor. Please try again.",
+      "types": {
+        "temperature": "Temperature",
+        "humidity": "Humidity",
+        "pressure": "Pressure",
+        "air_quality": "Air Quality",
+        "co2": "CO2",
+        "noise": "Noise"
+      }
+    },
+    "statisticsTab": {
+      "title": "Station Health",
+      "description": "Current health status of the monitoring station",
+      "status": "Status",
+      "activeSensors": "Active Sensors",
+      "inactiveSensors": "Inactive Sensors",
+      "issues": "Issues:",
+      "lastReading": "Last reading:",
+      "overview": "Overview",
+      "overviewDescription": "General statistics",
+      "totalReadings": "Total Readings",
+      "lastReadingDate": "Last Reading",
+      "averageValues": "Average Values",
+      "averageValuesDescription": "Average readings by sensor type",
+      "dataTrends": "Data Trends",
+      "dataTrendsDescription": "Historical data visualization",
+      "chartPlaceholder": "Chart visualization will be available here",
+      "loadFailed": "Failed to load statistics. Please try again.",
+      "healthStatuses": {
+        "healthy": "Healthy",
+        "warning": "Warning",
+        "critical": "Critical"
+      }
+    },
+    "stationDetails": {
+      "title": "Station Details",
+      "description": "Monitoring station details",
+      "loading": "Loading station details...",
+      "backToStations": "Back to Stations",
+      "tabs": {
+        "info": "Station Info",
+        "sensors": "Sensors",
+        "alerts": "Alerts",
+        "statistics": "Statistics"
+      },
+      "errors": {
+        "stationIdRequired": "Station ID is required",
+        "loadFailed": "Failed to load station details. Please try again.",
+        "sessionExpired": "Your session has expired. Please log in again.",
+        "notFound": "Station not found."
+      }
+    }
+  },
+  "maintenance": {
+    "title": "Maintenance Management",
+    "description": "Manage maintenance schedules for stations and sensors",
+    "refresh": "Refresh",
+    "createSchedule": "Create Schedule",
+    "allSchedules": "All Schedules",
+    "mySchedule": "My Schedule",
+    "loadingSchedules": "Loading schedules...",
+    "loadingMySchedule": "Loading your schedule...",
+    "noSchedules": "No maintenance schedules found.",
+    "noMySchedules": "No upcoming maintenance scheduled for you.",
+    "tableHeaders": {
+      "title": "Title",
+      "type": "Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "assignedTo": "Assigned To",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "completed": "Completed",
+      "overdue": "Overdue",
+      "upcoming": "Upcoming",
+      "scheduled": "Scheduled",
+      "unassigned": "Unassigned"
+    },
+    "scheduleTypes": {
+      "oneTime": "One Time",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "dialog": {
+      "create": {
+        "title": "Create Maintenance Schedule",
+        "description": "Create a new maintenance schedule for a station or sensor"
+      },
+      "edit": {
+        "title": "Edit Maintenance Schedule",
+        "description": "Update maintenance schedule information"
+      },
+      "assign": {
+        "title": "Assign Maintenance",
+        "description": "Assign this maintenance schedule to an operator"
+      },
+      "complete": {
+        "title": "Complete Maintenance",
+        "description": "Mark this maintenance schedule as completed"
+      },
+      "details": {
+        "title": "Maintenance Details",
+        "description": "Detailed information about the maintenance schedule"
+      },
+      "delete": {
+        "title": "Delete Maintenance Schedule",
+        "description": "Are you sure you want to delete the maintenance schedule {title}? This action cannot be undone."
+      }
+    },
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Maintenance title",
+      "description": "Description",
+      "descriptionPlaceholder": "Maintenance description",
+      "scheduleType": "Schedule Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "station": "Station",
+      "selectStation": "Select station",
+      "sensor": "Sensor",
+      "selectSensor": "Select sensor",
+      "assignTo": "Assign To",
+      "selectOperator": "Select operator",
+      "completionNotes": "Completion Notes",
+      "completionNotesPlaceholder": "Add notes about the completed maintenance...",
+      "none": "None",
+      "required": "*"
+    },
+    "filter": {
+      "title": "Filter",
+      "description": "Filter upcoming maintenance by days",
+      "daysAhead": "Days Ahead",
+      "checkUpcoming": "Check Upcoming",
+      "checking": "Checking..."
+    },
+    "details": {
+      "id": "ID",
+      "status": "Status",
+      "title": "Title",
+      "scheduleType": "Schedule Type",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "assignedTo": "Assigned To",
+      "created": "Created",
+      "description": "Description",
+      "noDescription": "No description"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "editSchedule": "Edit Schedule",
+      "assignOperator": "Assign Operator",
+      "markAsCompleted": "Mark as Completed",
+      "deleteSchedule": "Delete Schedule",
+      "details": "Details",
+      "accept": "Accept",
+      "complete": "Complete",
+      "cancel": "Cancel",
+      "create": "Create",
+      "creating": "Creating...",
+      "update": "Update",
+      "updating": "Updating...",
+      "assign": "Assign",
+      "assigning": "Assigning...",
+      "completing": "Completing...",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "close": "Close"
+    },
+    "toast": {
+      "success": {
+        "dataRefreshed": "Data refreshed successfully.",
+        "scheduleCreated": "Maintenance schedule created successfully.",
+        "scheduleUpdated": "Maintenance schedule updated successfully.",
+        "maintenanceAssigned": "Maintenance has been assigned successfully.",
+        "maintenanceCompleted": "Maintenance has been marked as completed.",
+        "scheduleDeleted": "Maintenance schedule has been deleted.",
+        "upcomingChecked": "Upcoming maintenance has been checked and notifications sent."
+      },
+      "error": {
+        "refreshFailed": "Failed to refresh data.",
+        "loadFailed": "Failed to load maintenance schedules. Please try again.",
+        "createFailed": "Failed to create maintenance schedule. Please try again.",
+        "updateFailed": "Failed to update maintenance schedule. Please try again.",
+        "assignFailed": "Failed to assign maintenance. Please try again.",
+        "completeFailed": "Failed to complete maintenance. Please try again.",
+        "deleteFailed": "Failed to delete maintenance schedule. Please try again.",
+        "checkFailed": "Failed to check upcoming maintenance.",
+        "loadMyFailed": "Failed to load your maintenance schedules.",
+        "loadDetailsFailed": "Failed to load maintenance details.",
+        "sessionExpired": "Your session has expired. Please log in again.",
+        "noPermission": "You don't have permission to create maintenance schedules.",
+        "validationError": "Validation Error",
+        "titleAndDateRequired": "Title and start date are required."
+      }
+    },
+    "days": "days"
+  }
+}
