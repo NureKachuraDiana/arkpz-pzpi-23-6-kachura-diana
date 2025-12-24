@@ -1,0 +1,537 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// EcoMonitor — Environmental Monitoring System
+// Database schema for Nest.js + Prisma
+// =============================================
+
+// =============================================
+// ENUMS
+// =============================================
+
+enum Role {
+  ADMIN
+  OPERATOR
+  OBSERVER
+}
+
+enum SensorType {
+  TEMPERATURE
+  HUMIDITY
+  CO2
+  AIR_QUALITY
+  PM2_5
+  PM10
+  PRESSURE
+  NOISE
+  WATER_QUALITY
+}
+
+enum MaintenanceScheduleType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  ONE_TIME
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  ALERT
+  INFO
+  WARNING
+  SYSTEM
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+}
+
+enum SystemEventType {
+  ERROR
+  WARNING
+  INFO
+  MAINTENANCE
+}
+
+enum ExportFormat {
+  CSV
+  PDF
+  JSON
+  EXCEL
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum BackupStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// =============================================
+// USERS & AUTHENTICATION
+// =============================================
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  firstName String?
+  lastName  String?
+  role      Role      @default(OBSERVER)
+  isActive  Boolean   @default(true)
+  lastLogin DateTime? // Track last login time
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  sessions         Session[]
+  passwordResets   PasswordReset[]
+  notifications    Notification[]
+  userPreferences  UserPreferences?
+  apiKeys          ApiKey[]
+  dataExports      DataExport[]
+  activityLogs     UserActivityLog[]
+  notificationLogs NotificationLog[]
+  systemEvents     SystemEvent[]
+
+  @@index([email, isActive]) // Add index for better query performance
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ipAddress String? // Track IP for security
+  userAgent String? // Track browser/device info
+  role      Role
+
+  @@index([userId, expiresAt]) // Better performance for session cleanup
+  @@map("sessions")
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  used      Boolean   @default(false)
+  usedAt    DateTime? // Track when token was used
+
+  @@index([token, expiresAt]) // Better performance for token validation
+  @@map("password_resets")
+}
+
+model UserPreferences {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language             String   @default("uk")
+  measurementUnit      String   @default("metric")
+  notificationsEnabled Boolean  @default(true)
+  darkModeEnabled      Boolean  @default(false)
+  emailNotifications   Boolean  @default(true)
+  pushNotifications    Boolean  @default(true)
+  smsNotifications     Boolean  @default(false)
+  updatedAt            DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+model UserActivityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  resource  String? // What resource was affected
+  ipAddress String?
+  userAgent String?
+  metadata  Json? // Additional action details
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt]) // Better performance for user activity queries
+  @@map("user_activity_logs")
+}
+
+model RolePermission {
+  id        Int     @id @default(autoincrement())
+  role      Role
+  resource  String
+  canRead   Boolean @default(false)
+  canWrite  Boolean @default(false)
+  canUpdate Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  @@unique([role, resource])
+  @@map("role_permissions")
+}
+
+// =============================================
+// MONITORING STATIONS & SENSORS
+// =============================================
+
+model MonitoringStation {
+  id          Int      @id @unique @default(autoincrement())
+  name        String
+  description String?
+  latitude    Float
+  longitude   Float
+  altitude    Float?
+  address     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sensors              Sensor[]
+  stationAlerts        StationAlert[]
+  aggregated           AggregatedData[]
+  maintenanceSchedules MaintenanceSchedule[]
+
+  @@index([latitude, longitude]) // For spatial queries
+  @@map("monitoring_stations")
+}
+
+model Sensor {
+  id              Int               @id @default(autoincrement())
+  stationId       Int
+  station         MonitoringStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  type            SensorType
+  name            String
+  serialNumber    String            @unique
+  model           String? // Sensor model/manufacturer
+  isActive        Boolean           @default(true)
+  calibrationDate DateTime? // Last calibration date
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  readings             SensorReading[]
+  rawData              RawSensorData[]
+  statusHistory        SensorStatus[]
+  StationAlert         StationAlert[]
+  maintenanceSchedules MaintenanceSchedule[]
+
+  @@index([stationId, type]) // Better queries for station sensors by type
+  @@map("sensors")
+}
+
+model SensorReading {
+  id        Int      @id @default(autoincrement())
+  sensorId  Int
+  sensor    Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  value     Float
+  unit      String? // Measurement unit
+  timestamp DateTime @default(now())
+  quality   Float? // Data quality indicator (0-1)
+
+  @@index([sensorId, timestamp])
+  @@index([timestamp]) // For time-series analysis
+  @@map("sensor_readings")
+}
+
+model RawSensorData {
+  id         Int      @id @default(autoincrement())
+  sensorId   Int
+  sensor     Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  rawPayload Json
+  receivedAt DateTime @default(now())
+  processed  Boolean  @default(false) // Whether data has been processed
+
+  @@index([sensorId, receivedAt])
+  @@map("raw_sensor_data")
+}
+
+model SensorStatus {
+  id        Int      @id @default(autoincrement())
+  sensorId  Int
+  sensor    Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  isOnline  Boolean  @default(true)
+  lastCheck DateTime @default(now())
+  battery   Float? // Battery level percentage
+  signal    Float? // Signal strength
+  errors    String? // Any error messages
+
+  @@index([sensorId, lastCheck]) // For getting latest status
+  @@map("sensor_status")
+}
+
+model Threshold {
+  id          Int           @id @default(autoincrement())
+  sensorType  SensorType
+  minValue    Float?
+  maxValue    Float?
+  severity    AlertSeverity
+  description String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([sensorType, severity]) // Prevent duplicate thresholds
+  @@map("thresholds")
+}
+
+model StationAlert {
+  id             Int               @id @default(autoincrement())
+  stationId      Int
+  station        MonitoringStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  sensorId       Int? // Optional: specific sensor that triggered alert
+  sensor         Sensor?           @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  sensorType     SensorType
+  value          Float
+  thresholdValue Float
+  severity       AlertSeverity
+  message        String
+  isActive       Boolean           @default(true)
+  acknowledged   Boolean           @default(false) // Whether alert was acknowledged
+  acknowledgedBy Int? // User who acknowledged
+  acknowledgedAt DateTime? // When alert was acknowledged
+  createdAt      DateTime          @default(now())
+  resolvedAt     DateTime?
+
+  @@index([stationId, isActive, createdAt]) // For active alerts queries
+  @@index([sensorType, severity]) // For alert analysis
+  @@map("station_alerts")
+}
+
+// =============================================
+// ANALYTICS & VISUALIZATION
+// =============================================
+
+model AggregatedData {
+  id         Int               @id @default(autoincrement())
+  stationId  Int
+  station    MonitoringStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  sensorType SensorType
+  average    Float
+  minValue   Float
+  maxValue   Float
+  stdDev     Float? // Standard deviation
+  count      Int // Number of readings aggregated
+  timeRange  String // e.g., '1h', '24h', '7d'
+  startTime  DateTime
+  endTime    DateTime
+  createdAt  DateTime          @default(now())
+
+  @@unique([stationId, sensorType, timeRange, startTime]) // Prevent duplicate aggregations
+  @@index([stationId, sensorType, timeRange, startTime])
+  @@map("aggregated_data")
+}
+
+// =============================================
+// NOTIFICATIONS & COMMUNICATION
+// =============================================
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  priority  AlertSeverity? // Priority level for sorting
+  createdAt DateTime         @default(now())
+  expiresAt DateTime? // When notification expires
+
+  // Relations
+  notificationLogs NotificationLog[]
+
+  @@index([userId, isRead, createdAt]) // For user notification queries
+  @@map("notifications")
+}
+
+model NotificationTemplate {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  language  String           @default("uk")
+  title     String
+  message   String
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([type, language])
+  @@map("notification_templates")
+}
+
+model NotificationLog {
+  id             Int                 @id @default(autoincrement())
+  notificationId Int?
+  notification   Notification?       @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+  userId         Int
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel        NotificationChannel
+  status         NotificationStatus
+  sentAt         DateTime            @default(now())
+  errorMessage   String? // Error details if failed
+  retryCount     Int                 @default(0)
+
+  @@index([userId, channel, sentAt])
+  @@map("notification_logs")
+}
+
+// =============================================
+// API INTEGRATIONS
+// =============================================
+
+model ApiKey {
+  id          Int       @id @default(autoincrement())
+  name        String
+  key         String    @unique
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime? // Track last usage
+  createdAt   DateTime  @default(now())
+  permissions String[] // Scopes/permissions for this API key
+
+  // Relations
+  apiLogs ApiRequestLog[]
+
+  @@index([key, isActive]) // For API key validation
+  @@map("api_keys")
+}
+
+model ApiRequestLog {
+  id           Int      @id @default(autoincrement())
+  apiKeyId     Int
+  apiKey       ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  endpoint     String
+  method       String
+  ipAddress    String?
+  statusCode   Int
+  responseTime Int? // Response time in milliseconds
+  userAgent    String?
+  requestBody  String? // Request payload (consider size limits)
+  responseBody String? // Response payload (consider size limits)
+  createdAt    DateTime @default(now())
+
+  @@index([apiKeyId, createdAt]) // For usage analytics
+  @@index([endpoint, method]) // For endpoint analysis
+  @@map("api_request_logs")
+}
+
+// =============================================
+// DATA EXPORTS & BACKUPS
+// =============================================
+
+model DataExport {
+  id           Int          @id @default(autoincrement())
+  userId       Int
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  format       ExportFormat
+  status       ExportStatus @default(PENDING)
+  filePath     String?
+  fileName     String? // Generated filename
+  fileSize     Int? // File size in bytes
+  filters      Json?
+  errorMessage String? // Error details if failed
+  createdAt    DateTime     @default(now())
+  startedAt    DateTime? // When processing started
+  completedAt  DateTime?
+
+  @@index([userId, status, createdAt])
+  @@map("data_exports")
+}
+
+model SystemBackup {
+  id           Int          @id @default(autoincrement())
+  fileName     String
+  filePath     String
+  fileSize     Float? // Size in MB
+  status       BackupStatus @default(PENDING)
+  description  String? // Backup description
+  createdAt    DateTime     @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+  errorMessage String? // Error details if failed
+
+  @@index([status, createdAt])
+  @@map("system_backups")
+}
+
+// =============================================
+// SYSTEM EVENTS & MAINTENANCE
+// =============================================
+
+model SystemEvent {
+  id        Int             @id @default(autoincrement())
+  type      SystemEventType
+  source    String? // "sensor_service", "alert_engine", etc.
+  message   String
+  details   Json? // Additional event details
+  createdBy Int? // User who triggered the event
+  user      User?           @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt DateTime        @default(now())
+
+  @@index([type, createdAt]) // For event analysis and monitoring
+  @@map("system_events")
+}
+
+// =============================================
+// MAINTENANCE SCHEDULING
+// =============================================
+
+model MaintenanceSchedule {
+  id           Int                     @id @default(autoincrement())
+  stationId    Int?
+  station      MonitoringStation?      @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  sensorId     Int?
+  sensor       Sensor?                 @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  scheduleType MaintenanceScheduleType
+  startDate    DateTime
+  endDate      DateTime?
+  isCompleted  Boolean                 @default(false)
+  assignedTo   Int? // User assigned to maintenance
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([stationId, startDate])
+  @@map("maintenance_schedules")
+}
