@@ -1,0 +1,1804 @@
+МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+
+ 
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ
+УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+
+
+КАФЕДРА ПІ
+  
+
+ЗВІТ
+з лабораторної роботи №4
+з дисципліни «АНАЛІЗ ТА РЕФАКТОРИНГ 
+КОДУ ПРОГРАМНОГО ЗАБЕЗПЕЧЕННЯ»
+за темою «РОЗРОБКА IoT КЛІЄНТА  
+(БІЗНЕС-ЛОГІКИ ТА ФУНКЦІЙ НАЛАШТУВАННЯ)»
+
+
+
+Виконала:                                          	             
+ст. гр. ПЗПІ-23-6
+Качура Діана	Прийняв:	
+Асистент кафедри ПІ
+Дашенков Д. С.
+
+
+
+
+
+
+Харків 2025
+4.1 Мета заняття
+
+	Розробка бізнес-логіки та функцій налаштування IoT пристрою (сенсор)
+	
+	4.2 Виконання завдання
+	4.2.1 Розробка функцій налаштування IoT пристрою
+
+У межах розробки IoT-девайсів для екологічного моніторингу було реалізовано уніфікований підхід до налаштування клієнтської частини пристроїв. Незалежно від типу фізичного сенсора (датчик температури, датчик вологості DHT22 або газовий сенсор MQ-2), усі проєкти використовують однакову архітектуру конфігурації, що забезпечує масштабованість, повторне використання програмного коду та спрощення подальшої підтримки системи. Подальший опис функцій налаштування наведено на прикладі IoT-клієнта датчика вологості повітря, програмний код якого представлено в додатку А.
+Першочерговим етапом налаштування IoT-девайса є конфігурація мережевого з’єднання, необхідного для передавання телеметричних даних до серверної частини системи. У програмному коді визначаються параметри доступу до бездротової мережі Wi-Fi, зокрема ідентифікатор мережі та пароль:
+	const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+Ініціалізація з’єднання реалізується у спеціальній функції, яка відповідає за підключення до мережі та контроль стану з’єднання. У разі тимчасової недоступності мережі передбачено повторні спроби підключення, що дозволяє забезпечити стабільну роботу пристрою в реальних умовах експлуатації:
+WiFi.begin(ssid, password, 6);
+while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+}
+Наступним важливим аспектом налаштування є параметризація серверної взаємодії. Для передавання даних використовується HTTP-інтерфейс, адреса якого задається у конфігураційному блоці програми разом із часовим інтервалом надсилання телеметрії:
+const char* serverUrl = "http://host.wokwi.internal:5195/sensor-readings";
+const unsigned long POST_INTERVAL_MS = 10 * 60 * 1000;
+Такий підхід дозволяє змінювати сервер або періодичність передавання даних без внесення змін до основної логіки роботи IoT-девайса. Інтервал у 10 хвилин обрано як оптимальний компроміс між актуальністю екологічних показників та зменшенням навантаження на мережу і сервер.
+Налаштування апаратної конфігурації сенсора реалізовано шляхом визначення типу датчика та GPIO-піна мікроконтролера ESP32, до якого підключено сигнальну лінію. Для датчика вологості використовується сенсор DHT22, що задається наступним чином:
+#define DHT_PIN 4
+#define DHT_TYPE DHT22
+DHT dht(DHT_PIN, DHT_TYPE);
+Завдяки такому підходу програмний код може бути легко адаптований для інших сенсорів шляхом зміни відповідних параметрів без модифікації бізнес-логіки зчитування та обробки даних.
+Важливою складовою налаштування є ідентифікація IoT-девайса в межах системи. Для цього кожному пристрою присвоюється унікальний серійний номер, а також визначаються одиниці вимірювання фізичних величин, що передаються на сервер:
+const char* SENSOR_SERIAL = "DHT22-ESP32-001";
+const char* UNIT_HUMIDITY = "%";
+const char* UNIT_TEMPERATURE = "°C";
+Ці параметри включаються до складу телеметричних повідомлень та забезпечують коректну ідентифікацію джерела даних і правильну інтерпретацію показників у серверній частині системи.
+Окрему увагу приділено налаштуванню формату телеметричних даних, які передаються у вигляді JSON-повідомлень. У процесі формування повідомлення визначається структура даних, що містить основне виміряне значення, показник якості даних, часову мітку та додаткові метадані:
+jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+jsonDoc["value"] = humidity;
+jsonDoc["unit"] = UNIT_HUMIDITY;
+jsonDoc["quality"] = dataQuality;
+Розширення JSON-структури метаданими дозволяє використовувати телеметрію не лише для моніторингу, а й для подальшого аналітичного оброблення та оцінювання надійності отриманих вимірювань.
+З метою підвищення стабільності функціонування IoT-девайса в системі реалізовано базові механізми системної діагностики. Під час роботи пристрій контролює стан мережевого з’єднання, доступний обсяг оперативної пам’яті та параметри системного середовища, що відображається у діагностичних повідомленнях:
+Serial.println(ESP.getFreeHeap());
+Наявність таких механізмів дозволяє своєчасно виявляти помилки конфігурації та підвищує надійність експлуатації IoT-девайсів у довготривалому режимі роботи.
+
+4.2.2 Розробка бізнес логіки
+4.2.2.1 Датчик вологості (DHT22)
+
+Бізнес-логіка IoT-девайса датчика вологості (див. рисунок 4.1) спрямована на забезпечення коректного зчитування фізичних параметрів навколишнього середовища, їх первинну перевірку, оцінювання якості вимірювань, формування структурованих телеметричних повідомлень та передачу даних до серверної частини системи. Реалізація бізнес-логіки виконана на мікроконтролері ESP32 із використанням сенсора DHT22. Повний програмний код IoT-клієнта наведено в додатку А.
+
+ 
+Рисунок 4.1 – UML – діаграма діяльності сенсора вологості
+
+Основним елементом бізнес-логіки є процес зчитування даних із фізичного сенсора. Для цього використовується функція readDHT22Data, яка відповідає за отримання значень вологості та температури повітря. На цьому етапі реалізовано первинну валідацію даних, що дозволяє відфільтровувати некоректні або недостовірні вимірювання, які можуть виникати внаслідок апаратних збоїв або нестабільного з’єднання сенсора:
+humidity = dht.readHumidity();
+У межах бізнес-логіки передбачено перевірку отриманих значень на відповідність технічним характеристикам сенсора DHT22. Якщо виміряні параметри виходять за допустимі діапазони або мають невизначене значення, такі дані вважаються некоректними і не допускаються до подальшої обробки. Це дозволяє уникнути передачі помилкової телеметрії на сервер та підвищує загальну надійність системи.
+Після успішного зчитування даних виконується оцінювання їх якості, що є важливою складовою бізнес-логіки екологічного моніторингу. Для цього реалізовано окрему функцію, яка формує коефіцієнт якості вимірювань залежно від відхилення значень вологості та температури від нормальних умов експлуатації:
+float qualityScore = 1.0;
+if (humidity < 10.0 || humidity > 90.0) {
+    qualityScore -= 0.2;
+}
+Такий підхід дозволяє кількісно оцінювати достовірність кожного вимірювання та передавати цей показник разом із основними даними. Надалі показник якості може бути використаний серверною частиною для фільтрації, аналітики або прийняття рішень у системах моніторингу.
+Наступним етапом бізнес-логіки є формування телеметричного повідомлення у форматі JSON. Для цього реалізовано функцію constructJsonPayload, яка створює структурований об’єкт даних, що містить не лише основне значення вологості, але й супровідну інформацію, необхідну для коректної інтерпретації даних на сервері:
+jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+jsonDoc["value"] = humidity;
+jsonDoc["unit"] = UNIT_HUMIDITY;
+jsonDoc["quality"] = dataQuality;
+Окрім основних параметрів, до складу повідомлення включаються метадані, зокрема поточна температура повітря, модель сенсора, версія прошивки та системна діагностична інформація. Така структура повідомлення забезпечує універсальність бізнес-логіки та можливість подальшого розширення функціональності без зміни формату передавання даних.
+Завершальним етапом бізнес-логіки є передавання сформованого телеметричного повідомлення до серверної частини системи. Перед надсиланням даних здійснюється перевірка стану мережевого з’єднання, а у разі його відсутності виконується повторна ініціалізація Wi-Fi. Безпосередня передача даних реалізована через HTTP POST-запит:
+int httpResponseCode = httpClient.POST(jsonPayload);
+Отримана відповідь сервера аналізується у функції обробки відповіді, де можуть бути зафіксовані результати успішної передачі, присвоєний ідентифікатор вимірювання або повідомлення про перевищення допустимих порогових значень. Таким чином, бізнес-логіка IoT-девайса не обмежується лише збиранням даних, а також забезпечує двосторонню взаємодію із серверною системою.
+
+4.2.2.2 Датчик температури (LM35)
+
+Бізнес-логіка IoT-девайса датчика температури (див. рисунок 4.3) реалізує повний цикл обробки теплових параметрів навколишнього середовища — від зчитування аналогового сигналу до формування структурованого телеметричного повідомлення та його передачі до серверної частини системи. Реалізація виконана на базі мікроконтролера ESP32 з використанням аналогового температурного сенсора типу LM35, що забезпечує вимірювання температури у градусах Цельсія шляхом перетворення напруги на виході сенсора. Повний програмний код IoT-клієнта наведено в додатку Б.
+
+ 
+Рисунок 4.2 – UML – діаграма діяльності для сенсора температури
+
+Початковим етапом бізнес-логіки є зчитування сирих даних з аналогового входу ESP32. Для цього використовується вбудований 12-бітний аналого-цифровий перетворювач, що дозволяє отримувати значення напруги з високою точністю. Зчитування здійснюється з відповідного GPIO-піну, після чого отримане значення використовується для подальших обчислень:
+int rawValue = analogRead(TEMP_SENSOR_PIN);
+На рівні бізнес-логіки передбачена перевірка коректності зчитаного ADC-значення. Якщо сигнал знаходиться поблизу мінімального або максимального значення діапазону перетворювача, такі дані вважаються недостовірними, що може свідчити про апаратну несправність або відсутність сенсора. У такому випадку система автоматично переходить до використання симульованих даних, що дозволяє зберегти безперервність роботи IoT-девайса навіть за умов часткової відмови обладнання.
+Після отримання валідного ADC-значення бізнес-логіка виконує перетворення напруги у фізичне значення температури. Для цього використовується масштабний коефіцієнт сенсора, який відповідає залежності 10 мВ на 1 °C, а також опорна напруга аналого-цифрового перетворювача:
+float voltage = rawValue * (TEMP_VOLTAGE_REF / TEMP_ADC_RESOLUTION);
+temperature = (voltage - TEMP_SENSOR_OFFSET) * TEMP_SENSOR_SCALE;
+Отримане значення температури додатково перевіряється на відповідність фізично можливим межам. Якщо результат виходить за допустимий діапазон експлуатації сенсора, такі дані визнаються нереалістичними і не використовуються для подальшої обробки. Такий підхід дозволяє мінімізувати вплив шумів та помилкових вимірювань на загальну систему моніторингу.
+Важливою складовою бізнес-логіки є оцінювання якості даних вимірювання. Для цього реалізовано окремий механізм, який формує коефіцієнт достовірності на основі декількох факторів, зокрема використання симульованих даних, різких змін температури між послідовними вимірюваннями та стану системи після запуску:
+float qualityScore = 1.0;
+if (usingSimulated) {
+    qualityScore = 0.7;
+}
+Такий показник дозволяє серверній частині системи не лише зберігати числове значення температури, але й оцінювати надійність кожного окремого вимірювання, що є критично важливим для подальшого аналізу та побудови аналітичних моделей.
+Після обробки та оцінювання даних формується телеметричне повідомлення у форматі JSON. До його складу входить не лише поточне значення температури, але й метадані сенсора, інформація про стан системи, джерело даних та класифікація температурного стану відповідно до заданих порогових значень:
+jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+jsonDoc["sensorType"] = "TEMPERATURE";
+jsonDoc["value"] = temperature;
+jsonDoc["unit"] = UNIT_TEMPERATURE;
+jsonDoc["quality"] = dataQuality;
+Додатково бізнес-логіка виконує логічну інтерпретацію виміряної температури, визначаючи її стан як холодний, комфортний, теплий або критичний. Така семантична обробка дозволяє зменшити навантаження на серверну частину та спростити подальшу обробку даних у системі моніторингу.
+Завершальним етапом бізнес-логіки є передавання сформованого телеметричного повідомлення до серверної частини системи за допомогою HTTPS POST-запиту. Перед відправленням виконується перевірка стану мережевого з’єднання, а у разі його відсутності — повторна ініціалізація Wi-Fi:
+int httpResponseCode = httpClient.POST(jsonPayload);
+Отримана відповідь сервера аналізується з метою виявлення можливих порушень температурних порогів або підтвердження успішного збереження вимірювання. Таким чином, бізнес-логіка датчика температури забезпечує не лише збирання фізичних даних, але й їх первинну інтерпретацію, оцінювання достовірності та інтеграцію з серверною інфраструктурою.
+
+4.2.2.3 Газовий сенсор (MQ2)
+
+Бізнес-логіка IoT-девайса на основі газового сенсора MQ-2 (див. рисунок 4.3) призначена для виявлення небезпечних концентрацій горючих газів і продуктів горіння, а також для оцінювання загальної якості повітря у приміщенні. На відміну від температурних і вологісних сенсорів, даний тип датчика потребує обов’язкового прогріву нагрівального елемента, що безпосередньо враховано у структурі бізнес-логіки. Реалізація виконана на базі мікроконтролера ESP32 із передаванням результатів вимірювань до серверної частини системи у форматі структурованої телеметрії. Повний програмний код IoT-клієнта наведено в додатку В.
+Початковим етапом роботи бізнес-логіки є ініціалізація сенсора та запуск фази прогріву. Для MQ-2 цей етап є критичним, оскільки стабільність показників можлива лише після досягнення робочої температури нагрівального елемента. У коді фіксується момент початку прогріву, а до його завершення передавання даних блокується:
+if (!sensorWarmedUp && warmUpStart == 0) {
+    controlHeater(true);
+    warmUpStart = currentTime;
+    return false;
+}
+Такий підхід дозволяє виключити з обробки недостовірні показники, характерні для початкового етапу роботи сенсора, і підвищує загальну надійність системи моніторингу газів.
+Після завершення прогріву бізнес-логіка переходить до етапу отримання даних про стан повітря. У межах даної реалізації використовуються наперед задані тестові значення, що імітують різні рівні забруднення повітря та концентрації газів. Це дозволяє перевіряти логіку обробки даних, механізми тривог і передачі телеметрії незалежно від фізичних умов середовища:
+airQuality = sensorData[dataIndex][0];
+gasConcentration = sensorData[dataIndex][1];
+primaryGas = getPrimaryGasFromIndex((int)sensorData[dataIndex][2]);
+На основі отриманих значень бізнес-логіка визначає основний тип виявленого газу, зокрема скраплений нафтовий газ, дим або чадний газ. Це рішення базується на співвідношенні концентрацій і дозволяє виконувати семантичну інтерпретацію вимірювань безпосередньо на IoT-девайсі.
+
+ 
+Рисунок 4.3 – UML – діаграма діяльності для газового сенсора
+
+Важливою складовою бізнес-логіки є оцінювання якості отриманих даних. Для газових сенсорів цей показник враховує надмірно високі концентрації, різкі стрибки значень між вимірюваннями та вплив початкового періоду роботи пристрою після запуску:
+if (gasConcentration > 10000) {
+    qualityScore -= 0.5;
+}
+Сформований коефіцієнт якості дозволяє серверній частині системи коректно інтерпретувати рівень довіри до вимірювань і приймати обґрунтовані рішення щодо обробки аварійних ситуацій.
+Після завершення аналізу даних бізнес-логіка формує телеметричне повідомлення у форматі JSON. Структура повідомлення містить як узагальнений показник якості повітря, так і детальну інформацію про концентрацію газів та умови вимірювання:
+jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+jsonDoc["sensorType"] = "AIR_QUALITY";
+jsonDoc["value"] = airQuality;
+jsonDoc["quality"] = dataQuality;
+Окрім основних параметрів, до повідомлення включаються метадані, що містять інформацію про модель сенсора, стан нагрівача, перелік потенційно виявлюваних газів та системні характеристики пристрою. Така деталізація забезпечує гнучкість серверної обробки та можливість подальшого розширення функціональності.
+Завершальним етапом бізнес-логіки є передавання сформованого повідомлення до серверної частини системи за допомогою HTTP POST-запиту. Перед надсиланням здійснюється перевірка стану мережевого з’єднання, що забезпечує стабільність обміну даними в умовах нестабільної мережі:
+int httpResponseCode = httpClient.POST(jsonPayload);
+У відповідь сервер може повертати інформацію про перевищення допустимих порогових значень концентрації газів, що дозволяє реалізувати механізми раннього попередження та аварійного реагування. Таким чином, бізнес-логіка датчика MQ-2 поєднує функції збору даних, їх інтерпретації та інтеграції з централізованою системою моніторингу.
+4.2.3 Побудова UML-діаграми прецедентів
+
+UML-діаграма прецедентів (див. рисунок 4.4) для IoT-пристрою використовується з метою формалізації функціональних можливостей вбудованого програмного забезпечення та визначення його взаємодії із зовнішніми компонентами системи. У межах даної діаграми основна увага зосереджена на поведінці пристрою як автономного елемента IoT-інфраструктури та його комунікації із серверною частиною, яка виступає зовнішнім актором.
+Центральним актором діаграми є серверна частина системи, оскільки саме вона ініціює або очікує ключові результати роботи IoT-пристрою, зокрема отримання телеметричних даних та реакцію на аварійні або порогові стани. При цьому сам IoT-пристрій розглядається як система, всередині якої реалізовано набір прецедентів, що описують його бізнес-логіку.
+Основним прецедентом діаграми є процес періодичного відправлення даних телеметрії. Даний прецедент відображає регулярну передачу виміряних параметрів із сенсорів до серверної частини та є ключовим з точки зору функціонального призначення пристрою. Його виконання неможливе без попереднього встановлення мережевого з’єднання, що відображено через відношення include з прецедентом забезпечення Wi-Fi-з’єднання. Таким чином підкреслюється обов’язковість наявності стабільного каналу зв’язку для реалізації основного сценарію роботи.
+Процес відправлення телеметрії також тісно пов’язаний із прецедентом зчитування сирих даних з датчика. Даний прецедент описує отримання первинних значень безпосередньо з апаратних сенсорів і включає в себе низькорівневу взаємодію з обладнанням. Він, у свою чергу, включає сканування показників, що відображає циклічний характер збору даних та можливість підтримки декількох сенсорів у межах одного пристрою.
+ 
+Рисунок 4.4 – UML – діаграма прецедентів
+
+Окреме місце в діаграмі займає прецедент обробки алертів серверної частини. Він моделює сценарій, за якого сервер, проаналізувавши отримані телеметричні дані, ініціює зворотну взаємодію з IoT-пристроєм. Це дозволяє реалізувати механізми реагування на небезпечні або критичні стани, наприклад активацію індикаторів, зміну режиму роботи або підвищення частоти вимірювань.
+Використання відношень include у діаграмі підкреслює структурну залежність між окремими функціональними блоками бізнес-логіки та дозволяє уникнути дублювання описів повторюваних процесів. Такий підхід забезпечує чітку ієрархію прецедентів та спрощує подальше розширення системи, зокрема при додаванні нових типів сенсорів або каналів зв’язку.
+
+4.2.4 Побудова UML-діаграми діяльності процесу зчитування даних
+
+UML-діаграма діяльності (див. рисунок 4.5) використовується для детального моделювання послідовності виконання операцій у межах IoT-системи, починаючи з моменту отримання даних від фізичного сенсора та завершуючи їх збереженням і формуванням сповіщень на серверній частині. На відміну від діаграми прецедентів, яка відображає перелік функціональних можливостей системи, діаграма діяльності дозволяє проаналізувати внутрішню логіку процесів, умовні переходи та точки прийняття рішень, що виникають під час обробки телеметрії.
+Початковий стан діаграми відповідає моменту надходження даних від IoT-сенсора. На цьому етапі відбувається первинне отримання виміряних значень, після чого ініціюється процес ідентифікації сенсора. Даний крок є критично важливим для забезпечення цілісності даних, оскільки дозволяє зіставити отриману телеметрію з конкретним зареєстрованим пристроєм у системі. У разі, якщо сенсор не ідентифіковано, процес примусово завершується з відповідним виключенням, що запобігає запису некоректних або неавторизованих даних.
+Після успішної ідентифікації сенсора система переходить до етапу обробки сирих даних. На цьому кроці виконується нормалізація показників, приведення одиниць вимірювання та підготовка даних до подальшого аналізу. Далі здійснюється валідація вхідних даних, у межах якої перевіряється коректність значень, їх відповідність допустимим діапазонам і відсутність аномалій. Наявність цього етапу в діаграмі підкреслює орієнтацію системи на стійку роботу в умовах шуму даних та потенційних апаратних збоїв.
+За результатами валідації виконується умовний перехід, який визначає, чи досягнуто порогове значення контрольованого параметра. Якщо порогове значення не досягнуто, система переходить до запису показників у базу даних. Цей сценарій відповідає штатному режиму роботи, за якого телеметрія накопичується для подальшого аналізу, статистики та візуалізації. Успішне завершення запису фіксується відповідним статусом, що сигналізує про коректне створення показника.
+
+ 
+Рисунок 4.5 – UML – діаграма діяльності процесу зчитування показників сенсорів
+
+У випадку досягнення або перевищення порогового значення активується альтернативна гілка виконання, яка відповідає аварійному або попереджувальному сценарію. На цьому етапі система визначає рівень тяжкості порогу, що дозволяє диференціювати реакцію залежно від ступеня небезпеки. Після цього ініціюється генерація повідомлення для сповіщення, яке містить інформацію про сенсор, значення показника та контекст події.
+Наступним кроком є перевірка наявності сповіщення для даного сенсора у базі даних. Якщо відповідне сповіщення вже існує, система переходить до його оновлення, що дозволяє уникнути дублювання повідомлень та зберігати актуальний стан проблеми. У разі відсутності сповіщення виконується створення нового запису з подальшим збереженням у базі даних. Завершення цього процесу також супроводжується фіксацією успішного статусу виконання.
+Завершальний стан діаграми відображає успішне опрацювання даних незалежно від обраної гілки виконання, що забезпечує уніфіковану модель завершення процесу. Такий підхід спрощує обробку результатів на рівні серверної логіки та дозволяє масштабувати систему шляхом додавання нових типів сенсорів або правил обробки порогових значень без суттєвих змін базової архітектури.
+
+4.3 Висновок
+
+У процесі розробки системи було створено та реалізовано IoT-клієнти, які виконують роль автономних програмно-апаратних модулів збору телеметричних даних і забезпечують безперервну взаємодію фізичних сенсорів із серверною частиною інформаційної системи. Реалізовані IoT-клієнти відповідають вимогам до стабільності, масштабованості та розширюваності, що є критично важливим для систем моніторингу в реальних умовах експлуатації.
+IoT-клієнт реалізовано як вбудований програмний компонент, що працює на мікроконтролері та забезпечує повний цикл обробки даних на пристрої: ініціалізацію апаратних модулів, встановлення мережевого з’єднання, періодичне зчитування показників сенсорів, первинну валідацію даних і формування структурованих повідомлень для передачі на сервер. Такий підхід дозволяє зменшити навантаження на серверну частину, оскільки частина логіки обробки та перевірки даних виконується безпосередньо на стороні клієнта.
+Важливою особливістю створених IoT-клієнтів є використання стандартизованого формату обміну даними у вигляді JSON-повідомлень, що містять не лише виміряні значення, але й метадані сенсора, часові мітки та діагностичну інформацію. Це забезпечує уніфікований інтерфейс взаємодії з серверною частиною та спрощує інтеграцію нових типів сенсорів без необхідності суттєвих змін у бізнес-логіці системи.
+Реалізований механізм періодичної передачі телеметрії з контролем стану мережевого з’єднання підвищує надійність функціонування IoT-клієнтів у нестабільних мережевих умовах. У разі втрати з’єднання клієнт здатний ініціювати повторну спробу підключення, що дозволяє забезпечити безперервність збору даних та зменшити ймовірність їх втрати. Крім того, вбудовані засоби логування та діагностики спрощують процес налагодження та подальшого супроводу системи.
+Таким чином, створені IoT-клієнти формують надійний та гнучкий рівень взаємодії між фізичними пристроями та серверною інфраструктурою. Вони забезпечують коректний збір, попередню обробку та передачу даних, що є фундаментом для подальшої аналітики, виявлення порогових станів і генерації сповіщень. Отримані результати підтверджують доцільність обраної архітектури та створюють основу для подальшого розвитку системи, зокрема шляхом підключення додаткових сенсорів, оптимізації енергоспоживання та розширення функціональності IoT-клієнтів у межах масштабованої розподіленої платформи.
+ 
+ПЕРЕЛІК ДЖЕРЕЛ ПОСИЛАННЯ
+1. GitHub - NureKachuraDiana/arkpz-pzpi-23-6-kachura-diana. GitHub. URL:  https://github.com/NureKachuraDiana/arkpz-pzpi-23-6-kachura-diana.
+2. YouTube: https://youtu.be/q69RKh_Hg_s
+ 
+Додаток А
+Код IoT сенсора вологості
+
+ 
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+
+// ==================== CONFIGURATION SECTION ====================
+// WiFi Settings
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+// Server Settings
+const char* serverUrl = "http://host.wokwi.internal:5195/sensor-readings";
+const unsigned long POST_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+// Sensor Settings
+#define DHT_PIN 4               // GPIO pin for DHT22 data connection
+#define DHT_TYPE DHT22          // Sensor model
+DHT dht(DHT_PIN, DHT_TYPE);
+
+// Sensor Metadata
+const char* SENSOR_SERIAL = "DHT22-ESP32-001";  // Unique sensor identifier
+const char* UNIT_HUMIDITY = "%";                // Humidity measurement unit
+const char* UNIT_TEMPERATURE = "°C";            // Temperature measurement unit
+
+// ==================== GLOBAL VARIABLES ====================
+unsigned long lastPostTime = 0;
+bool lastPostSuccessful = true;
+unsigned long bootTime = 0;
+
+// Helper function to print separator line
+void printSeparator(char symbol = '=', int length = 50) {
+    for (int i = 0; i < length; i++) {
+        Serial.print(symbol);
+    }
+    Serial.println();
+}
+
+// ==================== FUNCTION DECLARATIONS ====================
+void initializeWiFi();
+bool readDHT22Data(float &humidity, float &temperature);
+void logSensorReading(float humidity, float temperature, bool sensorHealthy);
+void transmitSensorData(float humidity, float temperature);
+String constructJsonPayload(float humidity, float temperature, float dataQuality = 1.0);
+void parseServerResponse(String response, int httpCode);
+void displaySystemStatus();
+float calculateDataQuality(float humidity, float temperature);
+
+// ==================== WIFI INITIALIZATION ====================
+void initializeWiFi() {
+    Serial.println("[WiFi] Initializing connection...");
+    WiFi.begin(ssid, password, 6); // Channel 6 for better stability
+    
+    Serial.print("[WiFi] Connecting to network");
+    int connectionAttempts = 0;
+    const int MAX_ATTEMPTS = 30;
+    
+    while (WiFi.status() != WL_CONNECTED && connectionAttempts < MAX_ATTEMPTS) {
+        delay(500);
+        Serial.print(".");
+        connectionAttempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\n[WiFi] ✓ Connection established successfully!");
+        Serial.print("[WiFi] IP Address: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("[WiFi] Signal Strength (RSSI): ");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm");
+    } else {
+        Serial.println("\n[WiFi] ✗ Failed to establish connection!");
+        Serial.println("[WiFi] Check network settings and try again.");
+    }
+}
+
+// ==================== SENSOR DATA READING ====================
+bool readDHT22Data(float &humidity, float &temperature) {
+    // Reading humidity and temperature from DHT22
+    humidity = dht.readHumidity();
+    temperature = dht.readTemperature(); // Celsius by default
+    
+    // Validate sensor readings
+    if (isnan(humidity) || isnan(temperature)) {
+        Serial.println("[Sensor] ✗ Failed to read data from DHT22!");
+        Serial.println("[Sensor] Possible causes:");
+        Serial.println("[Sensor]  - Sensor not properly connected");
+        Serial.println("[Sensor]  - Missing pull-up resistor (4.7kΩ - 10kΩ)");
+        Serial.println("[Sensor]  - Sensor damaged or unresponsive");
+        return false;
+    }
+    
+    // Validate data ranges (DHT22 specifications)
+    bool humidityValid = (humidity >= 0.0 && humidity <= 100.0);
+    bool temperatureValid = (temperature >= -40.0 && temperature <= 80.0);
+    
+    if (!humidityValid || !temperatureValid) {
+        Serial.println("[Sensor] ⚠️  Reading outside sensor specifications:");
+        if (!humidityValid) {
+            Serial.print("[Sensor] Humidity out of range (0-100%): ");
+            Serial.println(humidity);
+        }
+        if (!temperatureValid) {
+            Serial.print("[Sensor] Temperature out of range (-40°C to 80°C): ");
+            Serial.println(temperature);
+        }
+        return false;
+    }
+    
+    return true;
+}
+
+// ==================== DATA QUALITY ASSESSMENT ====================
+float calculateDataQuality(float humidity, float temperature) {
+    float qualityScore = 1.0; // Start with perfect score
+    
+    // Deduct points for extreme humidity values
+    if (humidity < 10.0 || humidity > 90.0) {
+        qualityScore -= 0.2;
+    }
+    
+    // Deduct points for extreme temperature values
+    if (temperature < 0.0 || temperature > 50.0) {
+        qualityScore -= 0.2;
+    }
+    
+    // Deduct points if humidity is at saturation (common sensor error)
+    if (humidity > 99.5) {
+        qualityScore -= 0.3;
+    }
+    
+    // Ensure quality stays within valid range [0.0, 1.0]
+    return constrain(qualityScore, 0.0, 1.0);
+}
+
+// ==================== JSON PAYLOAD CONSTRUCTION ====================
+String constructJsonPayload(float humidity, float temperature, float dataQuality) {
+    StaticJsonDocument<384> jsonDoc; // Increased size for metadata
+    
+    // Required fields for your API
+    jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+    jsonDoc["value"] = humidity; // Primary value is humidity
+    jsonDoc["unit"] = UNIT_HUMIDITY;
+    jsonDoc["quality"] = dataQuality;
+    
+    // Generate ISO 8601 timestamp
+    char timestampBuffer[25];
+    // Note: For production, use proper time synchronization (NTP)
+    sprintf(timestampBuffer, "2024-01-01T12:00:00.000Z");
+    jsonDoc["timestamp"] = timestampBuffer;
+    
+    // Additional sensor metadata
+    JsonObject metadata = jsonDoc.createNestedObject("metadata");
+    metadata["temperature"] = temperature;
+    metadata["temperatureUnit"] = UNIT_TEMPERATURE;
+    metadata["sensorModel"] = "DHT22";
+    metadata["firmwareVersion"] = "2.0.0";
+    metadata["readingType"] = "humidity";
+    metadata["location"] = "indoor"; // Change based on deployment
+    
+    // System diagnostics
+    JsonObject systemInfo = jsonDoc.createNestedObject("system");
+    systemInfo["uptime"] = millis() / 1000;
+    systemInfo["wifiRssi"] = WiFi.RSSI();
+    systemInfo["freeHeap"] = ESP.getFreeHeap();
+    
+    String payload;
+    serializeJson(jsonDoc, payload);
+    
+    // Debug output
+    Serial.println("[JSON] Constructed payload:");
+    serializeJsonPretty(jsonDoc, Serial);
+    Serial.println();
+    
+    return payload;
+}
+
+// ==================== DATA TRANSMISSION ====================
+void transmitSensorData(float humidity, float temperature) {
+    // Verify WiFi connection
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[HTTP] ✗ WiFi not connected. Attempting reconnection...");
+        initializeWiFi();
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.println("[HTTP] ✗ Cannot send data - WiFi unavailable");
+            return;
+        }
+    }
+    
+    HTTPClient httpClient;
+    
+    Serial.println("[HTTP] Initializing transmission...");
+    Serial.print("[HTTP] Target URL: ");
+    Serial.println(serverUrl);
+    
+    // Configure HTTP client
+    httpClient.begin(serverUrl);
+    httpClient.addHeader("Content-Type", "application/json");
+    httpClient.addHeader("Accept", "application/json");
+    httpClient.addHeader("X-Sensor-Model", "DHT22");
+    httpClient.addHeader("X-Firmware-Version", "2.0.0");
+    
+    // Calculate data quality and construct payload
+    float dataQuality = calculateDataQuality(humidity, temperature);
+    String jsonPayload = constructJsonPayload(humidity, temperature, dataQuality);
+    
+    Serial.print("[HTTP] Payload size: ");
+    Serial.print(jsonPayload.length());
+    Serial.println(" bytes");
+    Serial.println("[HTTP] Sending POST request...");
+    
+    // Execute POST request
+    int httpResponseCode = httpClient.POST(jsonPayload);
+    
+    // Process response
+    if (httpResponseCode > 0) {
+        Serial.print("[HTTP] ✓ Server responded with code: ");
+        Serial.println(httpResponseCode);
+        
+        String serverResponse = httpClient.getString();
+        Serial.print("[HTTP] Response body: ");
+        Serial.println(serverResponse);
+        
+        parseServerResponse(serverResponse, httpResponseCode);
+        lastPostSuccessful = true;
+        
+    } else {
+        Serial.print("[HTTP] ✗ Request failed with error: ");
+        Serial.println(httpResponseCode);
+        Serial.print("[HTTP] Error details: ");
+        Serial.println(httpClient.errorToString(httpResponseCode));
+        
+        lastPostSuccessful = false;
+    }
+    
+    // Cleanup
+    httpClient.end();
+    Serial.println("[HTTP] Connection closed");
+}
+
+// ==================== RESPONSE PARSING ====================
+void parseServerResponse(String response, int httpCode) {
+    // Successful creation (201) or OK (200)
+    if (httpCode == 201 || httpCode == 200) {
+        DynamicJsonDocument responseDoc(512);
+        DeserializationError error = deserializeJson(responseDoc, response);
+        
+        if (error) {
+            Serial.print("[Response] ✗ Failed to parse JSON: ");
+            Serial.println(error.c_str());
+            return;
+        }
+        
+        // Extract reading ID
+        if (responseDoc.containsKey("id")) {
+            Serial.print("[Response] ✓ Reading ID assigned: ");
+            Serial.println(responseDoc["id"].as<String>());
+        }
+        
+        // Check for threshold violations
+        if (responseDoc.containsKey("thresholdViolations")) {
+            JsonArray violations = responseDoc["thresholdViolations"];
+            if (violations.size() > 0) {
+                Serial.println("[Response] ⚠️  Threshold violations detected:");
+                for (JsonObject violation : violations) {
+                    Serial.print("    - Type: ");
+                    Serial.print(violation["type"].as<String>());
+                    Serial.print(", Severity: ");
+                    Serial.print(violation["severity"].as<String>());
+                    if (violation.containsKey("message")) {
+                        Serial.print(", Message: ");
+                        Serial.print(violation["message"].as<String>());
+                    }
+                    Serial.println();
+                }
+            } else {
+                Serial.println("[Response] ✓ No threshold violations");
+            }
+        }
+        
+        // Log quality score if provided
+        if (responseDoc.containsKey("quality")) {
+            Serial.print("[Response] Quality score: ");
+            Serial.println(responseDoc["quality"].as<float>());
+        }
+    }
+}
+
+// ==================== SENSOR LOGGING ====================
+void logSensorReading(float humidity, float temperature, bool sensorHealthy) {
+    Serial.println();
+    printSeparator('=', 50);
+    Serial.println("SENSOR READING REPORT");
+    printSeparator('=', 50);
+    
+    Serial.print("Sensor Serial: ");
+    Serial.println(SENSOR_SERIAL);
+    
+    Serial.print("Sensor Status: ");
+    Serial.println(sensorHealthy ? "HEALTHY ✓" : "UNHEALTHY ✗");
+    
+    if (sensorHealthy) {
+        Serial.print("Humidity: ");
+        Serial.print(humidity, 1); // 1 decimal place
+        Serial.print(" ");
+        Serial.println(UNIT_HUMIDITY);
+        
+        Serial.print("Temperature: ");
+        Serial.print(temperature, 1);
+        Serial.print(" ");
+        Serial.println(UNIT_TEMPERATURE);
+        
+        // Humidity interpretation
+        Serial.print("Humidity Level: ");
+        if (humidity < 20.0) Serial.println("Very Dry");
+        else if (humidity < 30.0) Serial.println("Dry");
+        else if (humidity < 50.0) Serial.println("Comfortable");
+        else if (humidity < 65.0) Serial.println("Moderate");
+        else if (humidity < 80.0) Serial.println("Humid");
+        else Serial.println("Very Humid (Risk of Condensation)");
+        
+        // Data quality assessment
+        float quality = calculateDataQuality(humidity, temperature);
+        Serial.print("Data Quality Score: ");
+        Serial.print(quality * 100);
+        Serial.println("%");
+    }
+    
+    printSeparator('-', 50);
+}
+
+// ==================== SYSTEM STATUS DISPLAY ====================
+void displaySystemStatus() {
+    printSeparator('=', 50);
+    Serial.println("SYSTEM STATUS");
+    printSeparator('=', 50);
+    
+    // WiFi Status
+    Serial.print("WiFi Connection: ");
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.print("CONNECTED ✓ (");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm)");
+        Serial.print("IP Address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("DISCONNECTED ✗");
+    }
+    
+    // Sensor Status
+    float testHumidity, testTemperature;
+    bool sensorWorking = readDHT22Data(testHumidity, testTemperature);
+    Serial.print("DHT22 Sensor: ");
+    Serial.println(sensorWorking ? "OPERATIONAL ✓" : "FAILED ✗");
+    
+    // Transmission Status
+    Serial.print("Last Transmission: ");
+    Serial.println(lastPostSuccessful ? "SUCCESSFUL ✓" : "FAILED ✗");
+    
+    // Memory Status
+    Serial.print("Free Heap Memory: ");
+    Serial.print(ESP.getFreeHeap());
+    Serial.println(" bytes");
+    
+    // Next Transmission
+    unsigned long secondsUntilNext = (POST_INTERVAL_MS - (millis() - lastPostTime)) / 1000;
+    if (secondsUntilNext > POST_INTERVAL_MS / 1000) {
+        secondsUntilNext = 0;
+    }
+    Serial.print("Next Transmission in: ");
+    Serial.print(secondsUntilNext / 60);
+    Serial.print(" minutes ");
+    Serial.print(secondsUntilNext % 60);
+    Serial.println(" seconds");
+    
+    printSeparator('=', 50);
+    Serial.println();
+}
+
+// ==================== SETUP FUNCTION ====================
+void setup() {
+    // Initialize Serial Communication
+    Serial.begin(115200);
+    delay(1000); // Wait for serial monitor initialization
+    
+    Serial.println();
+    printSeparator('=', 50);
+    Serial.println("ESP32 DHT22 HUMIDITY MONITOR");
+    Serial.println("Version 2.0.0 | 4-Pin DHT22 Configuration");
+    printSeparator('=', 50);
+    
+    bootTime = millis();
+    
+    // Initialize DHT22 Sensor
+    Serial.println("[Init] Starting DHT22 sensor...");
+    dht.begin();
+    delay(2000); // DHT22 requires 2-second stabilization time
+    Serial.println("[Init] DHT22 sensor ready");
+    
+    // Connect to WiFi
+    initializeWiFi();
+    
+    // Initial sensor reading and log
+    float initialHumidity, initialTemperature;
+    if (readDHT22Data(initialHumidity, initialTemperature)) {
+        logSensorReading(initialHumidity, initialTemperature, true);
+    }
+    
+    // Schedule first transmission immediately
+    lastPostTime = millis() - POST_INTERVAL_MS;
+    
+    Serial.println("[Init] System initialization complete");
+    Serial.println("[Init] Starting main monitoring loop...\n");
+}
+
+// ==================== MAIN LOOP ====================
+void loop() {
+    unsigned long currentTime = millis();
+    
+    // Periodic data transmission (every 10 minutes)
+    if (currentTime - lastPostTime >= POST_INTERVAL_MS) {
+        Serial.println("\n[Schedule] Scheduled transmission initiated");
+        
+        float humidity, temperature;
+        bool sensorDataValid = readDHT22Data(humidity, temperature);
+        
+        if (sensorDataValid) {
+            logSensorReading(humidity, temperature, true);
+            transmitSensorData(humidity, temperature);
+        } else {
+            logSensorReading(0, 0, false);
+            Serial.println("[Schedule] Transmission skipped - invalid sensor data");
+        }
+        
+        lastPostTime = currentTime;
+        Serial.print("[Schedule] Next transmission in ");
+        Serial.print(POST_INTERVAL_MS / 60000);
+        Serial.println(" minutes");
+    }
+    
+    // Periodic status display (every 60 seconds)
+    static unsigned long lastStatusTime = 0;
+    if (currentTime - lastStatusTime >= 60000) {
+        displaySystemStatus();
+        lastStatusTime = currentTime;
+    }
+    
+    // Short delay to prevent watchdog timer issues
+    delay(100);
+}
+ 
+ 
+Додаток Б
+Код IoT сенсора температури
+
+ 
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// ==================== CONFIGURATION SECTION ====================
+// WiFi Settings
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+// Server Settings
+const char* serverUrl = "http://host.wokwi.internal:5195/sensor-readings";
+const unsigned long POST_INTERVAL_MS = 30 * 1000 * 20; 
+
+// Sensor Settings
+#define TEMP_SENSOR_PIN 35          // GPIO pin for NTS analog output (ADC1_CH7 on ESP32)
+
+// NTS sensor constants for analog temperature sensor (LM35)
+#define TEMP_VOLTAGE_REF 3.3        // ESP32 ADC voltage reference
+#define TEMP_ADC_RESOLUTION 4095.0  // ESP32 12-bit ADC
+#define TEMP_SENSOR_OFFSET 0.0      // Voltage offset at 0°C (0V for LM35)
+#define TEMP_SENSOR_SCALE 100.0     // Scale factor (10mV/°C = 100)
+
+// Temperature thresholds (°C)
+#define TEMP_LOW_THRESHOLD 10.0     // Cold temperature
+#define TEMP_HIGH_THRESHOLD 30.0    // Warm temperature
+#define TEMP_CRITICAL_THRESHOLD 65.0 // Critical temperature
+
+// Sensor Metadata
+const char* SENSOR_SERIAL = "NTS-ESP32-001";   // Unique sensor identifier
+const char* UNIT_TEMPERATURE = "°C";           // Degrees Celsius
+const char* SENSOR_TYPE = "TEMPERATURE";       // Sensor type
+
+// ==================== GLOBAL VARIABLES ====================
+unsigned long lastPostTime = 0;
+bool lastPostSuccessful = true;
+unsigned long bootTime = 0;
+float lastTemperature = 0.0;
+bool sensorInitialized = false;
+bool usingSimulatedData = false;
+
+// Simulated temperature data for when sensor fails
+float simulatedTemperatures[] = {
+    18.5, 20.0, 22.3, 25.1, 28.7, 31.2, 35.8, 19.8, 23.5, 27.9
+};
+const int SIMULATED_COUNT = sizeof(simulatedTemperatures) / sizeof(simulatedTemperatures[0]);
+
+// Helper function to print separator line
+void printSeparator(char symbol = '=', int length = 50) {
+    for (int i = 0; i < length; i++) {
+        Serial.print(symbol);
+    }
+    Serial.println();
+}
+
+// ==================== FUNCTION DECLARATIONS ====================
+void initializeWiFi();
+bool readTemperatureData(float &temperature);
+void logSensorReading(float temperature, bool sensorHealthy);
+void transmitSensorData(float temperature);
+String constructJsonPayload(float temperature, float dataQuality = 1.0);
+void parseServerResponse(String response, int httpCode);
+void displaySystemStatus();
+float calculateDataQuality(float temperature, bool usingSimulated);
+float calculateTemperatureFromADC(int adcValue);
+float getSimulatedTemperature();
+
+// ==================== WIFI INITIALIZATION ====================
+void initializeWiFi() {
+    Serial.println("[WiFi] Initializing connection...");
+    WiFi.begin(ssid, password, 6);
+    
+    Serial.print("[WiFi] Connecting to network");
+    int connectionAttempts = 0;
+    const int MAX_ATTEMPTS = 30;
+    
+    while (WiFi.status() != WL_CONNECTED && connectionAttempts < MAX_ATTEMPTS) {
+        delay(500);
+        Serial.print(".");
+        connectionAttempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\n[WiFi] ✓ Connection established successfully!");
+        Serial.print("[WiFi] IP Address: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("[WiFi] Signal Strength (RSSI): ");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm");
+    } else {
+        Serial.println("\n[WiFi] ✗ Failed to establish connection!");
+        Serial.println("[WiFi] Check network settings and try again.");
+    }
+}
+
+// ==================== TEMPERATURE DATA READING ====================
+bool readTemperatureData(float &temperature) {
+    static bool sensorStarted = false;
+    static unsigned long startTime = 0;
+    
+    if (!sensorStarted) {
+        Serial.println("[Sensor] Initializing temperature sensor...");
+        startTime = millis();
+        sensorStarted = true;
+        delay(100);
+        return false;
+    }
+    
+    if (millis() - startTime < 1000) {
+        return false;
+    }
+    
+    if (!sensorInitialized) {
+        sensorInitialized = true;
+        Serial.println("[Sensor] ✓ Temperature sensor ready!");
+    }
+    
+    int rawValue = analogRead(TEMP_SENSOR_PIN);
+    
+    if (rawValue <= 10 || rawValue >= TEMP_ADC_RESOLUTION - 10) {
+        Serial.println("[Sensor] ✗ Invalid ADC reading, using simulated data");
+        temperature = getSimulatedTemperature();
+        usingSimulatedData = true;
+        lastTemperature = temperature;
+        return true;
+    }
+    
+    float voltage = rawValue * (TEMP_VOLTAGE_REF / TEMP_ADC_RESOLUTION);
+    temperature = (voltage - TEMP_SENSOR_OFFSET) * TEMP_SENSOR_SCALE;
+    
+    if (temperature < -10.0 || temperature > 100.0) {
+        Serial.print("[Sensor] ✗ Unrealistic temperature calculated: ");
+        Serial.print(temperature);
+        Serial.println(" °C, using simulated data");
+        temperature = getSimulatedTemperature();
+        usingSimulatedData = true;
+    } else {
+        usingSimulatedData = false;
+        lastTemperature = temperature;
+    }
+    
+    Serial.print("[Sensor] Raw ADC: ");
+    Serial.print(rawValue);
+    Serial.print(", Voltage: ");
+    Serial.print(voltage, 3);
+    Serial.print("V, Temperature: ");
+    Serial.print(temperature, 1);
+    if (usingSimulatedData) {
+        Serial.print(" °C (simulated)");
+    }
+    Serial.println(" °C");
+    
+    return true;
+}
+
+float getSimulatedTemperature() {
+    static int index = 0;
+    static unsigned long lastChange = 0;
+    
+    if (millis() - lastChange > 10000) {
+        index = random(0, SIMULATED_COUNT);
+        lastChange = millis();
+    }
+    
+    float temp = simulatedTemperatures[index];
+    float variation = (random(-20, 21)) / 10.0;
+    return temp + variation;
+}
+
+// ==================== DATA QUALITY ASSESSMENT ====================
+float calculateDataQuality(float temperature, bool usingSimulated) {
+    float qualityScore = 1.0;
+    
+    if (usingSimulated) {
+        qualityScore = 0.7;
+    }
+    
+    if (temperature < -10.0 || temperature > 100.0) {
+        qualityScore -= 0.5;
+    }
+    
+    static float lastTemp = 0;
+    if (lastTemp != 0) {
+        float change = abs(temperature - lastTemp);
+        if (change > 5.0) {
+            qualityScore -= 0.2;
+        }
+    }
+    lastTemp = temperature;
+    
+    if (millis() < 5000) {
+        qualityScore -= 0.3;
+    }
+    
+    return constrain(qualityScore, 0.0, 1.0);
+}
+
+// ==================== JSON PAYLOAD CONSTRUCTION ====================
+String constructJsonPayload(float temperature, float dataQuality) {
+    StaticJsonDocument<512> jsonDoc;
+    
+    jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+    jsonDoc["sensorType"] = "TEMPERATURE";
+    jsonDoc["value"] = temperature;
+    jsonDoc["unit"] = UNIT_TEMPERATURE;
+    jsonDoc["quality"] = dataQuality;
+    
+    char timestampBuffer[25];
+    sprintf(timestampBuffer, "2024-01-01T12:00:00.000Z");
+    jsonDoc["timestamp"] = timestampBuffer;
+    
+    JsonObject metadata = jsonDoc.createNestedObject("metadata");
+    metadata["sensorModel"] = "Analog-Temperature-Sensor";
+    metadata["voltageReference"] = TEMP_VOLTAGE_REF;
+    metadata["adcResolution"] = TEMP_ADC_RESOLUTION;
+    metadata["firmwareVersion"] = "1.0.0";
+    metadata["readingType"] = "temperature";
+    metadata["location"] = "indoor";
+    metadata["sensorInterface"] = "analog";
+    metadata["dataSource"] = usingSimulatedData ? "simulated" : "real";
+    
+    JsonObject tempInfo = metadata.createNestedObject("temperatureInfo");
+    if (temperature < TEMP_LOW_THRESHOLD) {
+        tempInfo["condition"] = "COLD";
+    } else if (temperature < TEMP_HIGH_THRESHOLD) {
+        tempInfo["condition"] = "COMFORTABLE";
+    } else if (temperature < TEMP_CRITICAL_THRESHOLD) {
+        tempInfo["condition"] = "WARM";
+    } else {
+        tempInfo["condition"] = "HOT";
+    }
+    tempInfo["lowThreshold"] = TEMP_LOW_THRESHOLD;
+    tempInfo["highThreshold"] = TEMP_HIGH_THRESHOLD;
+    tempInfo["criticalThreshold"] = TEMP_CRITICAL_THRESHOLD;
+    
+    JsonObject systemInfo = jsonDoc.createNestedObject("system");
+    systemInfo["uptime"] = millis() / 1000;
+    systemInfo["wifiRssi"] = WiFi.RSSI();
+    systemInfo["freeHeap"] = ESP.getFreeHeap();
+    systemInfo["sensorInitialized"] = sensorInitialized;
+    systemInfo["usingSimulatedData"] = usingSimulatedData;
+    
+    String payload;
+    serializeJson(jsonDoc, payload);
+    
+    Serial.println("[JSON] Constructed payload:");
+    serializeJsonPretty(jsonDoc, Serial);
+    Serial.println();
+    
+    return payload;
+}
+
+// ==================== DATA TRANSMISSION ====================
+void transmitSensorData(float temperature) {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[HTTP] ✗ WiFi not connected. Attempting reconnection...");
+        initializeWiFi();
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.println("[HTTP] ✗ Cannot send data - WiFi unavailable");
+            return;
+        }
+    }
+    
+    HTTPClient httpClient;
+    
+    Serial.println("[HTTP] Initializing transmission...");
+    Serial.print("[HTTP] Target URL: ");
+    Serial.println(serverUrl);
+    
+    httpClient.begin(serverUrl);
+    httpClient.addHeader("Content-Type", "application/json");
+    httpClient.addHeader("Accept", "application/json");
+    httpClient.addHeader("X-Sensor-Model", "Analog-Temperature");
+    httpClient.addHeader("X-Firmware-Version", "1.0.0");
+    httpClient.addHeader("X-Sensor-Type", "temperature");
+    httpClient.addHeader("X-Data-Source", usingSimulatedData ? "simulated" : "real");
+    
+    float dataQuality = calculateDataQuality(temperature, usingSimulatedData);
+    String jsonPayload = constructJsonPayload(temperature, dataQuality);
+    
+    Serial.print("[HTTP] Payload size: ");
+    Serial.print(jsonPayload.length());
+    Serial.println(" bytes");
+    Serial.println("[HTTP] Sending POST request...");
+    
+    int httpResponseCode = httpClient.POST(jsonPayload);
+    
+    if (httpResponseCode > 0) {
+        Serial.print("[HTTP] ✓ Server responded with code: ");
+        Serial.println(httpResponseCode);
+        
+        String serverResponse = httpClient.getString();
+        Serial.print("[HTTP] Response body: ");
+        Serial.println(serverResponse);
+        
+        parseServerResponse(serverResponse, httpResponseCode);
+        lastPostSuccessful = true;
+        
+    } else {
+        Serial.print("[HTTP] ✗ Request failed with error: ");
+        Serial.println(httpResponseCode);
+        Serial.print("[HTTP] Error details: ");
+        Serial.println(httpClient.errorToString(httpResponseCode));
+        
+        lastPostSuccessful = false;
+    }
+    
+    httpClient.end();
+    Serial.println("[HTTP] Connection closed");
+}
+
+// ==================== RESPONSE PARSING ====================
+void parseServerResponse(String response, int httpCode) {
+    if (httpCode == 201 || httpCode == 200) {
+        DynamicJsonDocument responseDoc(512);
+        DeserializationError error = deserializeJson(responseDoc, response);
+        
+        if (error) {
+            Serial.print("[Response] ✗ Failed to parse JSON: ");
+            Serial.println(error.c_str());
+            return;
+        }
+        
+        if (responseDoc.containsKey("id")) {
+            Serial.print("[Response] ✓ Reading ID assigned: ");
+            Serial.println(responseDoc["id"].as<String>());
+        }
+        
+        if (responseDoc.containsKey("thresholdViolations")) {
+            JsonArray violations = responseDoc["thresholdViolations"];
+            if (violations.size() > 0) {
+                Serial.println("[Response] ⚠️  TEMPERATURE THRESHOLD VIOLATIONS DETECTED!");
+                for (JsonObject violation : violations) {
+                    Serial.print("    - Type: ");
+                    Serial.print(violation["type"].as<String>());
+                    Serial.print(", Severity: ");
+                    Serial.print(violation["severity"].as<String>());
+                    if (violation.containsKey("message")) {
+                        Serial.print(", Message: ");
+                        Serial.print(violation["message"].as<String>());
+                    }
+                    Serial.println();
+                }
+            } else {
+                Serial.println("[Response] ✓ Temperature within normal range");
+            }
+        }
+        
+        if (responseDoc.containsKey("quality")) {
+            Serial.print("[Response] Data quality score: ");
+            Serial.println(responseDoc["quality"].as<float>());
+        }
+    }
+}
+
+// ==================== SENSOR LOGGING ====================
+void logSensorReading(float temperature, bool sensorHealthy) {
+    Serial.println();
+    printSeparator('=', 50);
+    Serial.println("TEMPERATURE SENSOR READING REPORT");
+    printSeparator('=', 50);
+    
+    Serial.print("Sensor Serial: ");
+    Serial.println(SENSOR_SERIAL);
+    
+    Serial.print("Sensor Status: ");
+    Serial.println(sensorHealthy ? "HEALTHY ✓" : "UNHEALTHY ✗");
+    
+    Serial.print("Sensor Initialized: ");
+    Serial.println(sensorInitialized ? "YES ✓" : "NO ⏳");
+    
+    Serial.print("Data Source: ");
+    Serial.println(usingSimulatedData ? "SIMULATED" : "REAL SENSOR");
+    
+    if (sensorHealthy) {
+        Serial.print("Temperature: ");
+        Serial.print(temperature, 1);
+        Serial.print(" ");
+        Serial.println(UNIT_TEMPERATURE);
+        
+        Serial.print("Condition: ");
+        if (temperature < TEMP_LOW_THRESHOLD) {
+            Serial.println("COLD ❄️");
+        } else if (temperature < TEMP_HIGH_THRESHOLD) {
+            Serial.println("COMFORTABLE 😊");
+        } else if (temperature < TEMP_CRITICAL_THRESHOLD) {
+            Serial.println("WARM 🌡️");
+        } else {
+            Serial.println("HOT 🔥");
+        }
+        
+        float quality = calculateDataQuality(temperature, usingSimulatedData);
+        Serial.print("Data Quality Score: ");
+        Serial.print(quality * 100);
+        Serial.println("%");
+        
+        Serial.print("Sensor Type: Analog Temperature Sensor");
+        Serial.println();
+        Serial.print("ADC Resolution: 12-bit");
+        Serial.println();
+    }
+    
+    printSeparator('-', 50);
+}
+
+// ==================== SYSTEM STATUS DISPLAY ====================
+void displaySystemStatus() {
+    printSeparator('=', 50);
+    Serial.println("SYSTEM STATUS - TEMPERATURE MONITOR");
+    printSeparator('=', 50);
+    
+    Serial.print("WiFi Connection: ");
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.print("CONNECTED ✓ (");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm)");
+        Serial.print("IP Address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("DISCONNECTED ✗");
+    }
+    
+    Serial.print("Temperature Sensor: ");
+    Serial.println(sensorInitialized ? "OPERATIONAL ✓" : "INITIALIZING ⏳");
+    
+    Serial.print("Sensor Power: ");
+    Serial.println("ON (3.3V) ✓");
+    
+    Serial.print("Data Source: ");
+    Serial.println(usingSimulatedData ? "SIMULATED" : "REAL SENSOR");
+    
+    if (lastTemperature != 0) {
+        Serial.print("Last Temperature: ");
+        Serial.print(lastTemperature, 1);
+        Serial.println(" °C");
+    }
+    
+    Serial.print("Last Transmission: ");
+    Serial.println(lastPostSuccessful ? "SUCCESSFUL ✓" : "FAILED ✗");
+    
+    Serial.print("Free Heap Memory: ");
+    Serial.print(ESP.getFreeHeap());
+    Serial.println(" bytes");
+    
+    unsigned long secondsUntilNext = (POST_INTERVAL_MS - (millis() - lastPostTime)) / 1000;
+    if (secondsUntilNext > POST_INTERVAL_MS / 1000) {
+        secondsUntilNext = 0;
+    }
+    Serial.print("Next Transmission in: ");
+    Serial.print(secondsUntilNext / 60);
+    Serial.print(" minutes ");
+    Serial.print(secondsUntilNext % 60);
+    Serial.println(" seconds");
+    
+    printSeparator('=', 50);
+    Serial.println();
+}
+
+// ==================== SETUP FUNCTION ====================
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    
+    Serial.println();
+    printSeparator('=', 50);
+    Serial.println("ESP32 TEMPERATURE SENSOR MONITOR");
+    Serial.println("Version 1.0.0 | Sensor: Analog Temperature Sensor");
+    Serial.println("Measurement Range: -50°C to 150°C");
+    printSeparator('=', 50);
+    
+    bootTime = millis();
+    
+    randomSeed(analogRead(0));
+    
+    Serial.println("[Init] Configuring temperature sensor...");
+    pinMode(TEMP_SENSOR_PIN, INPUT);
+    
+    analogReadResolution(12);
+    analogSetAttenuation(ADC_11db);
+    
+    Serial.println("[Init] Temperature sensor initializing...");
+    
+    initializeWiFi();
+    
+    displaySystemStatus();
+    
+    lastPostTime = millis() - POST_INTERVAL_MS;
+    
+    Serial.println("[Init] System initialization complete");
+    Serial.println("[Init] Starting main monitoring loop...\n");
+}
+
+// ==================== MAIN LOOP ====================
+void loop() {
+    unsigned long currentTime = millis();
+    
+    if (!sensorInitialized && currentTime < 1000) {
+        delay(100);
+        return;
+    }
+    
+    if (currentTime - lastPostTime >= POST_INTERVAL_MS) {
+        Serial.println("\n[Schedule] Scheduled transmission initiated");
+        
+        float temperature;
+        bool sensorDataValid = readTemperatureData(temperature);
+        
+        if (sensorDataValid) {
+            logSensorReading(temperature, true);
+            transmitSensorData(temperature);
+        } else {
+            logSensorReading(0, false);
+            Serial.println("[Schedule] Transmission skipped - invalid sensor data");
+        }
+        
+        lastPostTime = currentTime;
+        Serial.print("[Schedule] Next transmission in ");
+        Serial.print(POST_INTERVAL_MS / 60000);
+        Serial.println(" minutes");
+    }
+    
+    static unsigned long lastStatusTime = 0;
+    if (currentTime - lastStatusTime >= 60000) {
+        displaySystemStatus();
+        lastStatusTime = currentTime;
+    }
+    
+    static unsigned long lastQuickCheck = 0;
+    if (currentTime - lastQuickCheck >= 5000) {
+        float temperature;
+        if (readTemperatureData(temperature)) {
+            if (temperature > TEMP_CRITICAL_THRESHOLD) {
+                Serial.println("\n⚠️ ⚠️ ⚠️  CRITICAL: HIGH TEMPERATURE DETECTED!");
+                Serial.print("Temperature: ");
+                Serial.print(temperature);
+                Serial.println(" °C");
+                if (usingSimulatedData) {
+                    Serial.println("Note: Using simulated data");
+                }
+                Serial.println("Check cooling systems!");
+                printSeparator('!', 50);
+            } else if (temperature < TEMP_LOW_THRESHOLD) {
+                Serial.println("\n⚠️ ⚠️ ⚠️  WARNING: LOW TEMPERATURE DETECTED!");
+                Serial.print("Temperature: ");
+                Serial.print(temperature);
+                Serial.println(" °C");
+                if (usingSimulatedData) {
+                    Serial.println("Note: Using simulated data");
+                }
+                Serial.println("Risk of freezing!");
+                printSeparator('!', 50);
+            }
+        }
+        lastQuickCheck = currentTime;
+    }
+    
+    delay(100);
+}
+ 
+ 
+Додаток В
+Код IoT газового сенсора
+
+ 
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// ==================== CONFIGURATION SECTION ====================
+// WiFi Settings
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+// Server Settings
+const char* serverUrl = "http://host.wokwi.internal:5195/sensor-readings";
+const unsigned long POST_INTERVAL_MS = 30 * 1000 * 20;
+
+// Sensor Settings
+#define MQ2_PIN 34                    // GPIO pin for MQ2 analog output (ADC1_CH6 on ESP32)
+#define HEATER_PIN 25                 // GPIO pin for MQ2 heater control (optional)
+#define MQ2_POWER_PIN 26              // GPIO pin for MQ2 power control (optional)
+
+// Calibration constants for MQ2
+#define MQ2_RL 10.0                   // Load resistance on the board (in kilo ohms)
+#define MQ2_RO_CLEAN_AIR 9.83         // Sensor resistance in clean air (Ro)
+#define MQ2_VOLTAGE_RESOLUTION 3.3    // ESP32 ADC voltage resolution
+#define MQ2_ADC_RESOLUTION 4095.0     // ESP32 12-bit ADC
+
+// Sensor Metadata
+const char* SENSOR_SERIAL = "MQ2-ESP32-001";      // Unique sensor identifier
+const char* UNIT_AIR_QUALITY = "ppm";              // Parts per million
+const char* DETECTED_GAS = "LPG/SMOKE/CO";         // Detected gases
+
+// ==================== GLOBAL VARIABLES ====================
+unsigned long lastPostTime = 0;
+bool lastPostSuccessful = true;
+unsigned long bootTime = 0;
+float lastAirQuality = 0.0;
+float lastGasConcentration = 0.0;
+bool sensorWarmedUp = false;
+unsigned long warmUpStart = 0;
+
+// Predefined sensor data for testing
+float sensorData[][3] = {
+    {50.0, 100.0, 0},    // Good air quality
+    {75.0, 250.0, 0},    // Moderate
+    {120.0, 450.0, 1},   // Unhealthy for sensitive
+    {180.0, 800.0, 1},   // Unhealthy
+    {280.0, 1500.0, 2},  // Very unhealthy
+    {350.0, 2500.0, 2},  // Hazardous
+    {450.0, 4000.0, 2}   // Dangerous
+};
+int dataIndex = 0;
+
+// Helper function to print separator line
+void printSeparator(char symbol = '=', int length = 50) {
+    for (int i = 0; i < length; i++) {
+        Serial.print(symbol);
+    }
+    Serial.println();
+}
+
+// ==================== FUNCTION DECLARATIONS ====================
+void initializeWiFi();
+bool readMQ2Data(float &airQuality, float &gasConcentration, String &primaryGas);
+void logSensorReading(float airQuality, float gasConcentration, const String& primaryGas, bool sensorHealthy);
+void transmitSensorData(float airQuality, float gasConcentration, const String& primaryGas);
+String constructJsonPayload(float airQuality, float gasConcentration, const String& primaryGas, float dataQuality = 1.0);
+void parseServerResponse(String response, int httpCode);
+void displaySystemStatus();
+float calculateDataQuality(float gasConcentration, const String& primaryGas);
+String detectPrimaryGas(float lpgConc, float smokeConc, float coConc);
+void controlHeater(bool enable);
+String getPrimaryGasFromIndex(int index);
+
+// ==================== WIFI INITIALIZATION ====================
+void initializeWiFi() {
+    Serial.println("[WiFi] Initializing connection...");
+    WiFi.begin(ssid, password, 6);
+    
+    Serial.print("[WiFi] Connecting to network");
+    int connectionAttempts = 0;
+    const int MAX_ATTEMPTS = 30;
+    
+    while (WiFi.status() != WL_CONNECTED && connectionAttempts < MAX_ATTEMPTS) {
+        delay(500);
+        Serial.print(".");
+        connectionAttempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\n[WiFi] ✓ Connection established successfully!");
+        Serial.print("[WiFi] IP Address: ");
+        Serial.println(WiFi.localIP());
+        Serial.print("[WiFi] Signal Strength (RSSI): ");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm");
+    } else {
+        Serial.println("\n[WiFi] ✗ Failed to establish connection!");
+        Serial.println("[WiFi] Check network settings and try again.");
+    }
+}
+
+// ==================== SENSOR DATA READING ====================
+bool readMQ2Data(float &airQuality, float &gasConcentration, String &primaryGas) {
+    unsigned long currentTime = millis();
+    
+    // First time initialization
+    if (!sensorWarmedUp && warmUpStart == 0) {
+        Serial.println("[Sensor] Warming up MQ2 sensor (30 seconds required)...");
+        controlHeater(true);
+        warmUpStart = currentTime;
+        return false;
+    }
+    
+    // Check if warm-up period is complete
+    if (currentTime - warmUpStart < 30000) {
+        unsigned long remaining = (30000 - (currentTime - warmUpStart)) / 1000;
+        if (remaining % 5 == 0) {
+            Serial.print("[Sensor] Warming up... ");
+            Serial.print(remaining);
+            Serial.println(" seconds remaining");
+        }
+        return false;
+    }
+    
+    // Mark sensor as warmed up
+    if (!sensorWarmedUp) {
+        sensorWarmedUp = true;
+        Serial.println("[Sensor] ✓ Warm-up complete!");
+    }
+    
+    // Use predefined sensor data instead of analog readings
+    if (dataIndex >= sizeof(sensorData)/sizeof(sensorData[0])) {
+        dataIndex = 0;
+    }
+    
+    // Get data from predefined array
+    airQuality = sensorData[dataIndex][0];
+    gasConcentration = sensorData[dataIndex][1];
+    int gasIndex = (int)sensorData[dataIndex][2];
+    
+    primaryGas = getPrimaryGasFromIndex(gasIndex);
+    
+    // Move to next data point
+    dataIndex++;
+    
+    // Update last readings
+    lastAirQuality = airQuality;
+    lastGasConcentration = gasConcentration;
+    
+    Serial.print("[Sensor] Generated data - AQI: ");
+    Serial.print(airQuality);
+    Serial.print(", Gas: ");
+    Serial.print(gasConcentration);
+    Serial.print(" ppm, Primary: ");
+    Serial.println(primaryGas);
+    
+    return true;
+}
+
+String getPrimaryGasFromIndex(int index) {
+    switch(index) {
+        case 0: return "LPG";
+        case 1: return "SMOKE";
+        case 2: return "CO";
+        default: return "LPG";
+    }
+}
+
+// ==================== GAS DETECTION ====================
+String detectPrimaryGas(float lpgConc, float smokeConc, float coConc) {
+    if (lpgConc >= smokeConc && lpgConc >= coConc) {
+        return "LPG";
+    } else if (smokeConc >= lpgConc && smokeConc >= coConc) {
+        return "SMOKE";
+    } else {
+        return "CO";
+    }
+}
+
+// ==================== HEATER CONTROL ====================
+void controlHeater(bool enable) {
+#ifdef HEATER_PIN
+    digitalWrite(HEATER_PIN, enable ? HIGH : LOW);
+    if (enable) {
+        Serial.println("[Sensor] MQ2 heater enabled");
+    }
+#endif
+}
+
+// ==================== DATA QUALITY ASSESSMENT ====================
+float calculateDataQuality(float gasConcentration, const String& primaryGas) {
+    float qualityScore = 1.0;
+    
+    if (gasConcentration > 10000) {
+        qualityScore -= 0.5;
+    }
+    
+    static float lastConcentration = 0;
+    if (lastConcentration > 0) {
+        float change = abs(gasConcentration - lastConcentration) / lastConcentration;
+        if (change > 0.5) {
+            qualityScore -= 0.2;
+        }
+    }
+    lastConcentration = gasConcentration;
+    
+    if (millis() < 45000) {
+        qualityScore -= 0.3;
+    }
+    
+    return constrain(qualityScore, 0.0, 1.0);
+}
+
+// ==================== JSON PAYLOAD CONSTRUCTION ====================
+String constructJsonPayload(float airQuality, float gasConcentration, const String& primaryGas, float dataQuality) {
+    StaticJsonDocument<512> jsonDoc;
+    
+    jsonDoc["sensorSerialNumber"] = SENSOR_SERIAL;
+    jsonDoc["sensorType"] = "AIR_QUALITY";
+    jsonDoc["value"] = airQuality;
+    jsonDoc["unit"] = "AQI";
+    jsonDoc["quality"] = dataQuality;
+    
+    char timestampBuffer[25];
+    sprintf(timestampBuffer, "2024-01-01T12:00:00.000Z");
+    jsonDoc["timestamp"] = timestampBuffer;
+    
+    JsonObject metadata = jsonDoc.createNestedObject("metadata");
+    metadata["gasConcentration"] = gasConcentration;
+    metadata["gasConcentrationUnit"] = UNIT_AIR_QUALITY;
+    metadata["primaryDetectedGas"] = primaryGas;
+    metadata["detectedGases"] = DETECTED_GAS;
+    metadata["sensorModel"] = "MQ-2";
+    metadata["sensorHeaterStatus"] = "ON";
+    metadata["firmwareVersion"] = "2.0.0";
+    metadata["readingType"] = "air_quality";
+    metadata["location"] = "indoor";
+    
+    JsonObject gasReadings = metadata.createNestedObject("gasReadings");
+    gasReadings["lpg_ppm"] = gasConcentration * 0.4;
+    gasReadings["smoke_ppm"] = gasConcentration * 0.3;
+    gasReadings["co_ppm"] = gasConcentration * 0.3;
+    
+    JsonObject systemInfo = jsonDoc.createNestedObject("system");
+    systemInfo["uptime"] = millis() / 1000;
+    systemInfo["wifiRssi"] = WiFi.RSSI();
+    systemInfo["freeHeap"] = ESP.getFreeHeap();
+    systemInfo["sensorWarmupComplete"] = sensorWarmedUp;
+    
+    String payload;
+    serializeJson(jsonDoc, payload);
+    
+    Serial.println("[JSON] Constructed payload:");
+    serializeJsonPretty(jsonDoc, Serial);
+    Serial.println();
+    
+    return payload;
+}
+
+// ==================== DATA TRANSMISSION ====================
+void transmitSensorData(float airQuality, float gasConcentration, const String& primaryGas) {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("[HTTP] ✗ WiFi not connected. Attempting reconnection...");
+        initializeWiFi();
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.println("[HTTP] ✗ Cannot send data - WiFi unavailable");
+            return;
+        }
+    }
+    
+    HTTPClient httpClient;
+    
+    Serial.println("[HTTP] Initializing transmission...");
+    Serial.print("[HTTP] Target URL: ");
+    Serial.println(serverUrl);
+    
+    httpClient.begin(serverUrl);
+    httpClient.addHeader("Content-Type", "application/json");
+    httpClient.addHeader("Accept", "application/json");
+    httpClient.addHeader("X-Sensor-Model", "MQ-2");
+    httpClient.addHeader("X-Firmware-Version", "2.0.0");
+    httpClient.addHeader("X-Gas-Sensor", "true");
+    
+    float dataQuality = calculateDataQuality(gasConcentration, primaryGas);
+    String jsonPayload = constructJsonPayload(airQuality, gasConcentration, primaryGas, dataQuality);
+    
+    Serial.print("[HTTP] Payload size: ");
+    Serial.print(jsonPayload.length());
+    Serial.println(" bytes");
+    Serial.println("[HTTP] Sending POST request...");
+    
+    int httpResponseCode = httpClient.POST(jsonPayload);
+    
+    if (httpResponseCode > 0) {
+        Serial.print("[HTTP] ✓ Server responded with code: ");
+        Serial.println(httpResponseCode);
+        
+        String serverResponse = httpClient.getString();
+        Serial.print("[HTTP] Response body: ");
+        Serial.println(serverResponse);
+        
+        parseServerResponse(serverResponse, httpResponseCode);
+        lastPostSuccessful = true;
+        
+    } else {
+        Serial.print("[HTTP] ✗ Request failed with error: ");
+        Serial.println(httpResponseCode);
+        Serial.print("[HTTP] Error details: ");
+        Serial.println(httpClient.errorToString(httpResponseCode));
+        
+        lastPostSuccessful = false;
+    }
+    
+    httpClient.end();
+    Serial.println("[HTTP] Connection closed");
+}
+
+// ==================== RESPONSE PARSING ====================
+void parseServerResponse(String response, int httpCode) {
+    if (httpCode == 201 || httpCode == 200) {
+        DynamicJsonDocument responseDoc(512);
+        DeserializationError error = deserializeJson(responseDoc, response);
+        
+        if (error) {
+            Serial.print("[Response] ✗ Failed to parse JSON: ");
+            Serial.println(error.c_str());
+            return;
+        }
+        
+        if (responseDoc.containsKey("id")) {
+            Serial.print("[Response] ✓ Reading ID assigned: ");
+            Serial.println(responseDoc["id"].as<String>());
+        }
+        
+        if (responseDoc.containsKey("thresholdViolations")) {
+            JsonArray violations = responseDoc["thresholdViolations"];
+            if (violations.size() > 0) {
+                Serial.println("[Response] ⚠️  GAS THRESHOLD VIOLATIONS DETECTED!");
+                for (JsonObject violation : violations) {
+                    Serial.print("    - Type: ");
+                    Serial.print(violation["type"].as<String>());
+                    Serial.print(", Severity: ");
+                    Serial.print(violation["severity"].as<String>());
+                    if (violation.containsKey("message")) {
+                        Serial.print(", Message: ");
+                        Serial.print(violation["message"].as<String>());
+                    }
+                    Serial.println();
+                }
+            } else {
+                Serial.println("[Response] ✓ Air quality within safe limits");
+            }
+        }
+        
+        if (responseDoc.containsKey("quality")) {
+            Serial.print("[Response] Data quality score: ");
+            Serial.println(responseDoc["quality"].as<float>());
+        }
+    }
+}
+
+// ==================== SENSOR LOGGING ====================
+void logSensorReading(float airQuality, float gasConcentration, const String& primaryGas, bool sensorHealthy) {
+    Serial.println();
+    printSeparator('=', 50);
+    Serial.println("GAS SENSOR READING REPORT");
+    printSeparator('=', 50);
+    
+    Serial.print("Sensor Serial: ");
+    Serial.println(SENSOR_SERIAL);
+    
+    Serial.print("Sensor Status: ");
+    Serial.println(sensorHealthy ? "HEALTHY ✓" : "UNHEALTHY ✗");
+    
+    Serial.print("Sensor Warmup: ");
+    Serial.println(sensorWarmedUp ? "COMPLETE ✓" : "IN PROGRESS ⏳");
+    
+    if (sensorHealthy) {
+        Serial.print("Air Quality Index: ");
+        Serial.print(airQuality, 1);
+        Serial.println(" AQI");
+        
+        Serial.print("Total Gas Concentration: ");
+        Serial.print(gasConcentration, 1);
+        Serial.print(" ");
+        Serial.println(UNIT_AIR_QUALITY);
+        
+        Serial.print("Primary Detected Gas: ");
+        Serial.println(primaryGas);
+        
+        Serial.print("Air Quality Level: ");
+        if (airQuality <= 50) Serial.println("GOOD (Safe)");
+        else if (airQuality <= 100) Serial.println("MODERATE (Acceptable)");
+        else if (airQuality <= 150) Serial.println("UNHEALTHY for Sensitive Groups");
+        else if (airQuality <= 200) Serial.println("UNHEALTHY");
+        else if (airQuality <= 300) Serial.println("VERY UNHEALTHY");
+        else Serial.println("HAZARDOUS ⚠️");
+        
+        Serial.print("Gas Level: ");
+        if (gasConcentration < 300) Serial.println("NORMAL (Background level)");
+        else if (gasConcentration < 1000) Serial.println("ELEVATED (Monitor)");
+        else if (gasConcentration < 5000) Serial.println("HIGH (Check for leaks)");
+        else Serial.println("DANGEROUS (Potential hazard!)");
+        
+        float quality = calculateDataQuality(gasConcentration, primaryGas);
+        Serial.print("Data Quality Score: ");
+        Serial.print(quality * 100);
+        Serial.println("%");
+    }
+    
+    printSeparator('-', 50);
+}
+
+// ==================== SYSTEM STATUS DISPLAY ====================
+void displaySystemStatus() {
+    printSeparator('=', 50);
+    Serial.println("SYSTEM STATUS - MQ2 GAS MONITOR");
+    printSeparator('=', 50);
+    
+    Serial.print("WiFi Connection: ");
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.print("CONNECTED ✓ (");
+        Serial.print(WiFi.RSSI());
+        Serial.println(" dBm)");
+        Serial.print("IP Address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("DISCONNECTED ✗");
+    }
+    
+    Serial.print("MQ2 Sensor: ");
+    Serial.println(sensorWarmedUp ? "OPERATIONAL ✓" : "INITIALIZING ⏳");
+    
+    Serial.print("Sensor Warmup: ");
+    if (!sensorWarmedUp && warmUpStart > 0) {
+        unsigned long remaining = (30000 - (millis() - warmUpStart)) / 1000;
+        if (remaining < 0) remaining = 0;
+        Serial.print("IN PROGRESS (");
+        Serial.print(remaining);
+        Serial.println("s remaining)");
+    } else if (sensorWarmedUp) {
+        Serial.println("COMPLETE ✓");
+    } else {
+        Serial.println("NOT STARTED");
+    }
+    
+    if (lastGasConcentration > 0) {
+        Serial.print("Last Gas Reading: ");
+        Serial.print(lastGasConcentration, 1);
+        Serial.println(" ppm");
+    }
+    
+    Serial.print("Last Transmission: ");
+    Serial.println(lastPostSuccessful ? "SUCCESSFUL ✓" : "FAILED ✗");
+    
+    Serial.print("Free Heap Memory: ");
+    Serial.print(ESP.getFreeHeap());
+    Serial.println(" bytes");
+    
+    unsigned long secondsUntilNext = (POST_INTERVAL_MS - (millis() - lastPostTime)) / 1000;
+    if (secondsUntilNext > POST_INTERVAL_MS / 1000) {
+        secondsUntilNext = 0;
+    }
+    Serial.print("Next Transmission in: ");
+    Serial.print(secondsUntilNext / 60);
+    Serial.print(" minutes ");
+    Serial.print(secondsUntilNext % 60);
+    Serial.println(" seconds");
+    
+    printSeparator('=', 50);
+    Serial.println();
+}
+
+// ==================== SETUP FUNCTION ====================
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    
+    Serial.println();
+    printSeparator('=', 50);
+    Serial.println("ESP32 MQ2 GAS SENSOR MONITOR");
+    Serial.println("Version 2.0.0 | Detects: LPG, Smoke, CO");
+    Serial.println("Warm-up time: 30 seconds required");
+    printSeparator('=', 50);
+    
+    bootTime = millis();
+    warmUpStart = millis();
+    
+    Serial.println("[Init] Configuring MQ2 sensor pins...");
+    pinMode(MQ2_PIN, INPUT);
+    
+#ifdef HEATER_PIN
+    pinMode(HEATER_PIN, OUTPUT);
+    Serial.println("[Init] MQ2 heater control enabled");
+#endif
+    
+#ifdef MQ2_POWER_PIN
+    pinMode(MQ2_POWER_PIN, OUTPUT);
+    digitalWrite(MQ2_POWER_PIN, HIGH);
+    Serial.println("[Init] MQ2 power control enabled");
+#endif
+    
+    controlHeater(true);
+    
+    Serial.println("[Init] MQ2 sensor initializing (requires 30s warm-up)");
+    
+    initializeWiFi();
+    
+    displaySystemStatus();
+    
+    lastPostTime = millis() - POST_INTERVAL_MS;
+    
+    Serial.println("[Init] System initialization complete");
+    Serial.println("[Init] Starting main monitoring loop...\n");
+}
+
+// ==================== MAIN LOOP ====================
+void loop() {
+    unsigned long currentTime = millis();
+    
+    if (!sensorWarmedUp && currentTime - warmUpStart < 30000) {
+        static unsigned long lastWarmupMsg = 0;
+        if (currentTime - lastWarmupMsg >= 5000) {
+            unsigned long remaining = (30000 - (currentTime - warmUpStart)) / 1000;
+            Serial.print("[Sensor] Warming up... ");
+            Serial.print(remaining);
+            Serial.println(" seconds remaining");
+            lastWarmupMsg = currentTime;
+        }
+        delay(1000);
+        return;
+    }
+    
+    if (currentTime - lastPostTime >= POST_INTERVAL_MS) {
+        Serial.println("\n[Schedule] Scheduled transmission initiated");
+        
+        float airQuality, gasConcentration;
+        String primaryGas;
+        bool sensorDataValid = readMQ2Data(airQuality, gasConcentration, primaryGas);
+        
+        if (sensorDataValid) {
+            logSensorReading(airQuality, gasConcentration, primaryGas, true);
+            transmitSensorData(airQuality, gasConcentration, primaryGas);
+        } else {
+            logSensorReading(0, 0, "NONE", false);
+            Serial.println("[Schedule] Transmission skipped - invalid sensor data");
+        }
+        
+        lastPostTime = currentTime;
+        Serial.print("[Schedule] Next transmission in ");
+        Serial.print(POST_INTERVAL_MS / 60000);
+        Serial.println(" minutes");
+    }
+    
+    static unsigned long lastStatusTime = 0;
+    if (currentTime - lastStatusTime >= 60000) {
+        displaySystemStatus();
+        lastStatusTime = currentTime;
+    }
+    
+    static unsigned long lastQuickCheck = 0;
+    if (currentTime - lastQuickCheck >= 5000) {
+        float airQuality, gasConcentration;
+        String primaryGas;
+        if (readMQ2Data(airQuality, gasConcentration, primaryGas)) {
+            if (gasConcentration > 5000) {
+                Serial.println("\n⚠️ ⚠️ ⚠️  EMERGENCY: HIGH GAS CONCENTRATION DETECTED!");
+                Serial.print("Concentration: ");
+                Serial.print(gasConcentration);
+                Serial.println(" ppm");
+                Serial.print("Primary Gas: ");
+                Serial.println(primaryGas);
+                Serial.println("Take immediate action!");
+                printSeparator('!', 50);
+            }
+        }
+        lastQuickCheck = currentTime;
+    }
+    
+    delay(100);
+}
+ 
+
